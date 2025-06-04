@@ -1,344 +1,277 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timeline Nghị Quyết - Ngành Ngân Hàng</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Light blue-gray background */
-        }
-        .timeline-item {
-            position: relative;
-            padding-bottom: 20px;
-            padding-left: 40px; /* Space for icon and line */
-            border-left: 3px solid #4a90e2; /* Blue timeline */
-        }
-        .timeline-item:last-child {
-            border-left: 3px solid transparent; /* No line for the last item */
-        }
-        .timeline-icon {
-            position: absolute;
-            left: -11px; /* Adjust to center on the line */
-            top: 0;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background-color: #4a90e2; /* Blue icon */
-            border: 3px solid #ffffff; /* White border for icon */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .timeline-icon i {
-            color: white;
-            font-size: 10px;
-        }
-        .timeline-content {
-            background-color: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        .timeline-content:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-        .details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out;
-            margin-top: 10px;
-            padding-left: 10px;
-            border-left: 2px dotted #cbd5e0;
-        }
-        .details.open {
-            max-height: 500px; /* Adjust as needed */
-        }
-        .date-badge {
-            background-color: #e2e8f0; /* Light gray badge */
-            color: #4a5568; /* Dark gray text */
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .unit-badge {
-            background-color: #c6f6d5; /* Light green */
-            color: #2f855a; /* Dark green */
-        }
-        .outcome-badge {
-            background-color: #fed7d7; /* Light red */
-            color: #c53030; /* Dark red */
-        }
-        .collapsible-header {
-            cursor: pointer;
-        }
-        .collapsible-header:hover .text-blue-600 {
-            text-decoration: underline;
-        }
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            background-color: #f0f4f8; /* Match body background */
-            z-index: 10;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-         /* Scrollbar styles */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4a90e2; /* Blue scrollbar */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #357abd; /* Darker blue on hover */
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý quỹ cơm</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
-        <header class="text-center mb-8 sticky-header pt-4">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
-                <i class="fas fa-calendar-alt text-blue-600"></i>
-                Timeline Kế Hoạch Triển Khai Nghị Quyết
-            </h1>
-            <p class="text-gray-600 mt-2 text-sm md:text-base">
-                Các mốc thời gian quan trọng của ngành Ngân hàng theo Quyết định số 2223/QĐ-NHNN.
-            </p>
-        </header>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-        <div id="timelineContainer" class="space-y-10">
-            <!-- Timeline items will be injected here by JavaScript -->
-        </div>
+    const App = () => {
+      const [members, setMembers] = useState([]);
+      const [inactiveMembers, setInactiveMembers] = useState([]);
+      const [newMemberName, setNewMemberName] = useState("");
+      const [events, setEvents] = useState([]);
+      const [newEvent, setNewEvent] = useState({ totalCost: 0, participants: [], date: "" });
+      const [contributions, setContributions] = useState([]);
 
-        <footer class="text-center mt-12 py-6 border-t border-gray-300">
-            <p class="text-gray-500 text-sm">
-                Thông tin được trích xuất từ Quyết định số 2223/QĐ-NHNN ngày 30/5/2025.
-            </p>
-        </footer>
-    </div>
+      console.log("App component initialized");
 
-    <script>
-        const timelineData = [
-            // --- NĂM 2025 (THEO THÁNG) ---
-            {
-                period: "Năm 2025 - Theo tháng",
-                events: [
-                    { displayDate: "Tháng 5/2025", title: "Hoàn thành xây dựng, cập nhật kế hoạch triển khai Chương trình hành động của Chính phủ", unit: "Cục CNTT", outcome: "Kế hoạch được ban hành." },
-                    { displayDate: "Tháng 5/2025", title: "Nâng cấp, hoàn thiện hạ tầng CNTT đáp ứng yêu cầu (NHNN)", unit: "Cục CNTT", outcome: "Hạ tầng CNTT được nâng cấp, hoàn thiện." },
-                    { displayDate: "Tháng 5/2025", title: "Nâng cấp, hoàn thiện hạ tầng CNTT khi triển khai Đề án 06 (TCTD, CNNHNNg, TGTT)", unit: "TCTD, CNNHNNg, TGTT", outcome: "Hạ tầng CNTT được nâng cấp hoàn thiện." },
+      // Load data from localStorage
+      useEffect(() => {
+        try {
+          const savedMembers = JSON.parse(localStorage.getItem("members")) || [];
+          const savedInactiveMembers = JSON.parse(localStorage.getItem("inactiveMembers")) || [];
+          const savedEvents = JSON.parse(localStorage.getItem("events")) || [];
+          const savedContributions = JSON.parse(localStorage.getItem("contributions")) || [];
+          setMembers(savedMembers);
+          setInactiveMembers(savedInactiveMembers);
+          setEvents(savedEvents);
+          setContributions(savedContributions);
+          console.log("Data loaded from localStorage:", { savedMembers, savedInactiveMembers, savedEvents, savedContributions });
+        } catch (e) {
+          console.error("Error loading data from localStorage:", e);
+        }
+      }, []);
 
-                    { displayDate: "Tháng 6/2025", title: "Rà soát các quy định pháp luật để tháo gỡ điểm nghẽn", unit: "Vụ Pháp chế (Vụ PC)", outcome: "Văn bản, báo cáo rà soát được ban hành." },
-                    { displayDate: "Tháng 6/2025", title: "Ban hành Thông tư về thu thập, khai thác, chia sẻ thông tin QTDND & TCTCVM", unit: "Cục An toàn hệ thống các TCTD", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 6/2025", title: "Tiếp tục phát triển, hoàn thiện, chuẩn hóa các CSDL chuyên ngành của NHNN", unit: "Các đơn vị chủ quản CSDL", outcome: "Danh mục CSDL của NHNN được cập nhật." },
+      // Save data to localStorage
+      useEffect(() => {
+        try {
+          localStorage.setItem("members", JSON.stringify(members));
+          localStorage.setItem("inactiveMembers", JSON.stringify(inactiveMembers));
+          localStorage.setItem("events", JSON.stringify(events));
+          localStorage.setItem("contributions", JSON.stringify(contributions));
+          console.log("Data saved to localStorage");
+        } catch (e) {
+          console.error("Error saving data to localStorage:", e);
+        }
+      }, [members, inactiveMembers, events, contributions]);
 
-                    { displayDate: "01/07/2025", title: "Hoàn thành xác thực sinh trắc học tài khoản ngân hàng, ví điện tử", unit: "TCTD, CNNHNNg, TGTT", outcome: "Các tài khoản được xác thực sinh trắc học." },
+      const addMember = () => {
+        if (newMemberName.trim()) {
+          setMembers([...members, { name: newMemberName, balance: 0, transactions: [] }]);
+          setNewMemberName("");
+          console.log("Added member:", newMemberName);
+        }
+      };
 
-                    { displayDate: "Tháng 9/2025", title: "Quyết định ban hành chương trình đào tạo, bồi dưỡng cán bộ về CĐS", unit: "Vụ Tổ chức cán bộ (Vụ TCCB)", outcome: "Chương trình đào tạo, bồi dưỡng được triển khai." },
-                    { displayDate: "Tháng 9/2025", title: "Ban hành Thông tư sửa đổi TT17/2024 (Mở TKTT)", unit: "Vụ Thanh toán (Vụ TT)", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 9/2025", title: "Ban hành Thông tư sửa đổi TT18/2024 (Thẻ NH)", unit: "Vụ TT", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 9/2025", title: "Ban hành Thông tư sửa đổi TT40/2024 (DV TGTT)", unit: "Vụ TT", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 9/2025", title: "Ban hành Thông tư sửa đổi TT15/2024 (TTKDTM)", unit: "Vụ TT", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 9/2025", title: "Hoàn thành số hóa quy trình nghiệp vụ nội bộ, hồ sơ tài liệu", unit: "Văn phòng", outcome: "Hoàn thành số hóa quy trình, hồ sơ." },
-                    { displayDate: "Tháng 9/2025", title: "Nâng cao hiệu quả PCRT qua kết nối CSDLQGvDC", unit: "Cục CNTT", outcome: "Kết nối, khai thác CSDLQGvDC trong PCRT." },
-                    { displayDate: "Tháng 9/2025", title: "Ban hành tiêu chuẩn TTĐTLNH theo ISO20022", unit: "Cục CNTT", outcome: "Tiêu chuẩn được ban hành." },
-                    { displayDate: "Tháng 9/2025", title: "Chỉ đạo triển khai tiêu chuẩn Open API", unit: "Cục CNTT", outcome: "Văn bản chỉ đạo." },
-                    { displayDate: "Tháng 9/2025", title: "Chỉ đạo triển khai tiêu chuẩn QR code hiển thị từ phía khách hàng", unit: "Vụ TT", outcome: "Văn bản chỉ đạo." },
+      const removeMember = (index) => {
+        const member = members[index];
+        setInactiveMembers([...inactiveMembers, member]);
+        setMembers(members.filter((_, i) => i !== index));
+        console.log("Removed member:", member.name);
+      };
 
-                    { displayDate: "Tháng 11/2025", title: "Ban hành Thông tư sửa đổi/thay thế TT34/2018 (Mạng máy tính NHNN)", unit: "Cục CNTT", outcome: "Thông tư được ban hành." },
+      const reactivateMember = (index) => {
+        const member = inactiveMembers[index];
+        setMembers([...members, member]);
+        setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
+        console.log("Reactivated member:", member.name);
+      };
 
-                    { displayDate: "Tháng 12/2025", title: "Ban hành Thông tư sửa đổi/thay thế TT28/2015 (Chữ ký số NHNN)", unit: "Cục CNTT", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 12/2025", title: "Ban hành Thông tư sửa đổi TT50/2024 (An toàn DV trực tuyến)", unit: "Cục CNTT", outcome: "Thông tư được ban hành." },
-                    { displayDate: "Tháng 12/2025", title: "Đẩy mạnh tái cấu trúc quy trình, đơn giản hóa TTHC", unit: "Văn phòng", outcome: "TTHC được tái cấu trúc, đơn giản hóa." },
-                    { displayDate: "Tháng 12/2025", title: "Hoàn thành đồng bộ Kho dữ liệu Data warehouse về TTDLQG", unit: "Cục CNTT", outcome: "Hoàn thành đồng bộ dữ liệu." },
-                    { displayDate: "Tháng 12/2025", title: "Hoàn thành đồng bộ dữ liệu CIC về TTDLQG", unit: "CIC", outcome: "Hoàn thành đồng bộ dữ liệu." },
-                    { displayDate: "Tháng 12/2025", title: "Hoàn thành đồng bộ CSDL Mã ngân hàng về TTDLQG", unit: "Cục CNTT", outcome: "Hoàn thành đồng bộ dữ liệu." },
-                    { displayDate: "Tháng 12/2025", title: "Hoàn thành đồng bộ Bảng số liệu Cổng TTĐT NHNN về TTDLQG", unit: "Cục CNTT", outcome: "Hoàn thành đồng bộ dữ liệu." },
-                    { displayDate: "Tháng 12/2025", title: "Xây dựng chương trình thúc đẩy SPDV ngân hàng số", unit: "Vụ TT", outcome: "Chương trình được ban hành, triển khai." },
-                ]
-            },
-            // --- NĂM 2025 (CHUNG) ---
-            {
-                period: "Năm 2025 - Chung",
-                events: [
-                    { displayDate: "Năm 2025", title: "Mục tiêu: TTKDTM ≥50%, Dân số có TK ≥90%", unit: "Vụ TT", outcome: "Đạt chỉ tiêu đề ra." },
-                    { displayDate: "Năm 2025", title: "Xây dựng Kế hoạch UDCNTT, CĐS & ATTT mạng NHNN 2025", unit: "Cục CNTT", outcome: "Kế hoạch được ban hành." },
-                    { displayDate: "Năm 2025", title: "Cập nhật Kế hoạch CĐS ngành NH đến 2025, ĐH đến 2030", unit: "Vụ TT", outcome: "Kế hoạch được cập nhật, ban hành." },
-                    { displayDate: "Năm 2025", title: "Cập nhật Kế hoạch hành động thực hiện Chiến lược PTKHCN&ĐMST đến 2030", unit: "Vụ TCCB", outcome: "Kế hoạch được cập nhật, ban hành." },
-                    { displayDate: "Năm 2025", title: "Xây dựng Quy định lưu trữ chứng từ điện tử ngành NH", unit: "Vụ Tài chính – Kế toán (Vụ TCKT)", outcome: "Quy định được ban hành." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Đề án Hoàn thành số hóa quy trình nội bộ", unit: "Văn phòng", outcome: "Đề án được phê duyệt." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Báo cáo Đề xuất CTĐT Thay thế Hệ thống Báo cáo NHNN (BigData-AI)", unit: "Cục CNTT", outcome: "Báo cáo được phê duyệt." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Báo cáo Đề xuất CTĐT Hoàn thiện HT chuyển mạch TC & bù trừ ĐT", unit: "NAPAS", outcome: "Báo cáo được phê duyệt." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Đề án CSDL dùng chung ngành Ngân hàng", unit: "Vụ DBTKOD", outcome: "Đề án được phê duyệt." },
-                    { displayDate: "Năm 2025", title: "Tham mưu ban hành, triển khai SPDV ngân hàng số", unit: "Cục CNTT", outcome: "Công văn hướng dẫn các TCTD." },
-                    { displayDate: "Năm 2025", title: "Triển khai Hệ thống SIMO giai đoạn 2", unit: "Vụ TT", outcome: "Hệ thống được triển khai." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Dự án Hệ thống TT phục vụ công tác PCRT NHNN", unit: "Cục CNTT", outcome: "Dự án được phê duyệt, chọn nhà thầu." },
-                    { displayDate: "Năm 2025", title: "Triển khai Hệ thống TT giám sát HĐ QTDND & TCTCVM", unit: "Cục CNTT", outcome: "Hệ thống được đưa vào sử dụng." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Dự án Xây dựng trung tâm SOC NHNN", unit: "Cục CNTT", outcome: "Dự án được phê duyệt." },
-                    { displayDate: "Năm 2025", title: "Triển khai Trung tâm điều hành thông minh (dashboards)", unit: "Cục CNTT", outcome: "Các Dashboard được triển khai." },
-                    { displayDate: "Năm 2025", title: "Phê duyệt Kế hoạch thuê Hệ thống DVC toàn trình", unit: "Cục CNTT", outcome: "Kế hoạch thuê được phê duyệt, triển khai HĐ." },
-                ]
-            },
-            // --- GIAI ĐOẠN 2025-2026 ---
-            {
-                period: "Giai đoạn 2025-2026",
-                events: [
-                    { displayDate: "2025-2026", title: "Nghiên cứu, xây dựng chính sách cho ứng dụng CNS trong NH", unit: "Vụ TT", outcome: "Ban hành các chính sách phát triển." },
-                    { displayDate: "2025-2026", title: "Hoàn thành triển khai nhiệm vụ CĐS, kết nối Đề án 06", unit: "Cục CNTT", outcome: "Hoàn thành triển khai." },
-                    { displayDate: "2025-2026", title: "Triển khai tự động hóa quy trình bằng RPA", unit: "Cục CNTT", outcome: "RPA được đưa vào sử dụng." },
-                    { displayDate: "2025-2026", title: "Xây dựng trung tâm giám sát an ninh mạng (SOC) NHNN", unit: "Cục CNTT", outcome: "Trung tâm SOC được đưa vào vận hành." },
-                ]
-            },
-            // --- GIAI ĐOẠN 2025-2027 ---
-            {
-                period: "Giai đoạn 2025-2027",
-                events: [
-                    { displayDate: "2025-2027", title: "Xây dựng hệ thống ứng dụng nghiệp vụ lõi, phần mềm nghiệp vụ mới", unit: "CIC", outcome: "Hệ thống được đưa vào sử dụng." },
-                ]
-            },
-            // --- GIAI ĐOẠN 2025-2028 ---
-            {
-                period: "Giai đoạn 2025-2028",
-                events: [
-                    { displayDate: "2025-2028", title: "Triển khai hệ thống thông tin lưu trữ chứng từ điện tử tại NHNN", unit: "Cục CNTT", outcome: "Hệ thống được triển khai đưa vào sử dụng." },
-                    { displayDate: "2025-2028", title: "Triển khai Hệ thống thông tin phục vụ công tác PCRT NHNN", unit: "Cục CNTT", outcome: "Hệ thống được đưa vào sử dụng." },
-                ]
-            },
-            // --- GIAI ĐOẠN 2025-2030 ---
-            {
-                period: "Giai đoạn 2025-2030",
-                events: [
-                    { displayDate: "2025-2030", title: "Thay thế Hệ thống Báo cáo NHNN (BigData-AI)", unit: "Cục CNTT", outcome: "Hệ thống được đưa vào sử dụng." },
-                    { displayDate: "2025-2030", title: "Thay thế Hệ thống TTĐTLNH (ISO20022)", unit: "Cục CNTT", outcome: "Hệ thống đáp ứng Chiến lược PTHTTT." },
-                    { displayDate: "2025-2030", title: "Xây dựng và triển khai Đề án đổi mới quy trình nghiệp vụ NHNN", unit: "Cục CNTT, Các Vụ, Cục nghiệp vụ", outcome: "Hệ thống TT đáp ứng quy trình đổi mới." },
-                    { displayDate: "2025-2030", title: "Triển khai Hệ thống DVC toàn trình", unit: "Cục CNTT", outcome: "Hệ thống được đưa vào sử dụng." },
-                    { displayDate: "2025-2030", title: "Hoàn thiện triển khai HT chuyển mạch TC & bù trừ ĐT", unit: "NAPAS", outcome: "Đáp ứng Chiến lược PTHTTT." },
-                    { displayDate: "2025-2030", title: "Xây dựng CSDL dùng chung ngành Ngân hàng", unit: "Vụ DBTKOD", outcome: "CSDL chuyên ngành được xây dựng, khai thác." },
-                ]
-            },
-            // --- NĂM 2026 ---
-            {
-                period: "Năm 2026",
-                events: [
-                     { displayDate: "Năm 2026", title: "Trình phê duyệt Đề án CSDL dùng chung ngành Ngân hàng", unit: "Vụ DBTKOD", outcome: "Đề án được trình phê duyệt." },
-                ]
-            },
-            // --- GIAI ĐOẠN 2026-2030 ---
-            {
-                period: "Giai đoạn 2026-2030",
-                events: [
-                    { displayDate: "2026-2030", title: "Xây dựng Kế hoạch UDCNTT, CĐS & ATTT mạng NHNN 2026–2030", unit: "Cục CNTT", outcome: "Kế hoạch được ban hành." },
-                    { displayDate: "2026-2030", title: "Xây dựng Đề án CSDL quốc gia về khách hàng ngành NH", unit: "Cục CNTT", outcome: "CSDLQG được xây dựng, khai thác." },
-                ]
-            },
-            // --- ĐẾN NĂM 2030 ---
-            {
-                period: "Đến năm 2030",
-                events: [
-                    { displayDate: "Đến 2030", title: "Mục tiêu: TTKDTM ≥80%, Dân số có TK ≥95%", unit: "Vụ TT", outcome: "Đạt chỉ tiêu đề ra." },
-                    { displayDate: "Đến 2030", title: "Cập nhật Chiến lược PTCNTT ngành NH đến 2025, ĐH 2030", unit: "Cục CNTT", outcome: "Chiến lược được cập nhật, ban hành." },
-                    { displayDate: "Đến 2030", title: "Xây dựng Khung kiến trúc Chính phủ số của NHNN (phiên bản 4.0)", unit: "Cục CNTT", outcome: "Khung kiến trúc được ban hành." },
-                ]
-            },
-            // --- NHIỆM VỤ THƯỜNG XUYÊN / HẰNG NĂM ---
-            {
-                period: "Nhiệm vụ Thường xuyên / Hằng năm",
-                events: [
-                    { displayDate: "Thường xuyên", title: "Chỉ đạo TCTD, CNNHNNg, TGTT đạt chỉ tiêu TTKDTM & TK giao dịch", unit: "Vụ TT", outcome: "Đảm bảo đạt chỉ tiêu." },
-                    { displayDate: "Thường xuyên", title: "Xây dựng chương trình, kế hoạch học tập số", unit: "Vụ TCCB", outcome: "Triển khai phong trào học tập." },
-                    { displayDate: "Thường xuyên", title: "Rà soát, xây dựng chính sách thu hút nhân lực CĐS & ATTT", unit: "Vụ TCCB", outcome: "Chính sách được ban hành." },
-                    { displayDate: "Thường xuyên", title: "Triển khai Phong trào “Bình dân học vụ số”", unit: "Vụ TCCB", outcome: "Các nhiệm vụ của phong trào được triển khai." },
-                    { displayDate: "Thường xuyên", title: "Triển khai cơ chế thử nghiệm có kiểm soát (Sandbox)", unit: "Vụ TT", outcome: "Triển khai các giải pháp thử nghiệm." },
-                    { displayDate: "Hằng năm", title: "Công bố danh mục các bài toán lớn về KHCN, ĐMST & CĐS", unit: "Vụ TCCB, Cục CNTT", outcome: "Các bài toán được công bố trên Cổng TTĐT NHNN." },
-                ]
-            }
-        ];
+      const addContribution = (memberIndex, amount) => {
+        if (amount <= 0) return;
+        const updatedMembers = [...members];
+        const member = updatedMembers[memberIndex];
+        member.balance += amount;
+        member.transactions.push({ type: "contribution", amount, date: new Date().toLocaleDateString() });
+        setMembers(updatedMembers);
+        setContributions([...contributions, { member: member.name, amount, date: new Date().toLocaleDateString() }]);
+        console.log("Added contribution for", member.name, ":", amount);
+      };
 
-        const timelineContainer = document.getElementById('timelineContainer');
+      const addEvent = () => {
+        if (newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
+        const costPerPerson = newEvent.totalCost / newEvent.participants.length;
+        const updatedMembers = [...members];
+        const eventDate = newEvent.date || new Date().toLocaleDateString();
 
-        timelineData.forEach(section => {
-            const sectionDiv = document.createElement('div');
-            sectionDiv.className = 'mb-12';
-
-            const sectionTitle = document.createElement('h2');
-            sectionTitle.className = 'text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b-2 border-blue-300';
-            sectionTitle.innerHTML = `<i class="fas fa-layer-group mr-2"></i>${section.period}`;
-            sectionDiv.appendChild(sectionTitle);
-
-            if (section.events.length > 0) {
-                section.events.forEach(event => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'timeline-item';
-
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'timeline-icon';
-                    iconDiv.innerHTML = '<i class="fas fa-check"></i>'; // Check icon for completed or planned
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'timeline-content';
-
-                    const headerDiv = document.createElement('div');
-                    headerDiv.className = 'collapsible-header flex justify-between items-center';
-                    headerDiv.onclick = function() {
-                        this.nextElementSibling.classList.toggle('open');
-                        const arrowIcon = this.querySelector('.arrow-icon');
-                        arrowIcon.classList.toggle('fa-chevron-down');
-                        arrowIcon.classList.toggle('fa-chevron-up');
-                    };
-
-                    const titleP = document.createElement('h3');
-                    titleP.className = 'text-lg font-semibold text-blue-600';
-                    titleP.textContent = event.title;
-
-                    const dateBadge = document.createElement('span');
-                    dateBadge.className = 'date-badge ml-2 flex-shrink-0';
-                    dateBadge.textContent = event.displayDate;
-                    
-                    const arrow = document.createElement('i');
-                    arrow.className = 'fas fa-chevron-down arrow-icon text-gray-500 ml-2';
-
-                    const titleAndArrow = document.createElement('div');
-                    titleAndArrow.className = 'flex-grow flex items-center';
-                    titleAndArrow.appendChild(titleP);
-                    titleAndArrow.appendChild(arrow);
-
-
-                    headerDiv.appendChild(titleAndArrow);
-                    headerDiv.appendChild(dateBadge);
-
-
-                    const detailsDiv = document.createElement('div');
-                    detailsDiv.className = 'details text-sm text-gray-700';
-                    detailsDiv.innerHTML = `
-                        <p class="mt-2"><strong class="font-semibold">Đơn vị chủ trì:</strong> <span class="unit-badge date-badge">${event.unit}</span></p>
-                        <p class="mt-1"><strong class="font-semibold">Kết quả đầu ra:</strong> <span class="outcome-badge date-badge">${event.outcome}</span></p>
-                    `;
-
-                    contentDiv.appendChild(headerDiv);
-                    contentDiv.appendChild(detailsDiv);
-                    itemDiv.appendChild(iconDiv);
-                    itemDiv.appendChild(contentDiv);
-                    sectionDiv.appendChild(itemDiv);
-                });
-            } else {
-                const noEventsP = document.createElement('p');
-                noEventsP.className = 'text-gray-500 italic';
-                noEventsP.textContent = 'Không có mục nào trong giai đoạn này.';
-                sectionDiv.appendChild(noEventsP);
-            }
-            timelineContainer.appendChild(sectionDiv);
+        newEvent.participants.forEach((memberIndex) => {
+          const member = updatedMembers[memberIndex];
+          member.balance -= costPerPerson;
+          member.transactions.push({ type: "meal", amount: costPerPerson, date: eventDate });
         });
-    </script>
+
+        setMembers(updatedMembers);
+        setEvents([...events, { totalCost: newEvent.totalCost, participants: newEvent.participants.map(i => members[i].name), date: eventDate }]);
+        setNewEvent({ totalCost: 0, participants: [], date: "" });
+        console.log("Added event with total cost:", newEvent.totalCost);
+      };
+
+      const toggleParticipant = (index) => {
+        const participants = newEvent.participants.includes(index)
+          ? newEvent.participants.filter((i) => i !== index)
+          : [...newEvent.participants, index];
+        setNewEvent({ ...newEvent, participants });
+        console.log("Toggled participant:", members[index]?.name || "Unknown");
+      };
+
+      return (
+        <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen">
+          <h1 className="text-3xl font-bold mb-6 text-center">Quản lý quỹ cơm</h1>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
+            <input
+              type="text"
+              value={newMemberName}
+              onChange={(e) => setNewMemberName(e.target.value)}
+              placeholder="Tên thành viên"
+              className="border p-2 mr-2 rounded"
+            />
+            <button onClick={addMember} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+              Thêm
+            </button>
+          </div>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member, index) => (
+                  <tr key={index}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => removeMember(index)}
+                        className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
+                      >
+                        Loại bỏ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inactiveMembers.map((member, index) => (
+                  <tr key={index}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => reactivateMember(index)}
+                        className="bg-green-500 text-white p-1 rounded hover:bg-green-600"
+                      >
+                        Kích hoạt lại
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
+            {members.map((member, index) => (
+              <div key={index} className="mb-2">
+                <span>{member.name}: </span>
+                <input
+                  type="number"
+                  placeholder="Số tiền (VND)"
+                  className="border p-2 mr-2 rounded"
+                  onChange={(e) => {
+                    const amount = parseFloat(e.target.value);
+                    if (amount > 0) addContribution(index, amount);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
+            <input
+              type="number"
+              value={newEvent.totalCost || ""}
+              onChange={(e) => setNewEvent({ ...newEvent, totalCost: parseFloat(e.target.value) || 0 })}
+              placeholder="Tổng chi phí (VND)"
+              className="border p-2 mb-2 w-full rounded"
+            />
+            <input
+              type="date"
+              value={newEvent.date}
+              onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+              className="border p-2 mb-2 w-full rounded"
+            />
+            <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
+            {members.map((member, index) => (
+              <div key={index} className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  checked={newEvent.participants.includes(index)}
+                  onChange={() => toggleParticipant(index)}
+                  className="mr-2"
+                />
+                <span>{member.name}</span>
+              </div>
+            ))}
+            <button
+              onClick={addEvent}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-2"
+            >
+              Thêm sự kiện
+            </button>
+          </div>
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
+            {members.map((member, index) => (
+              <div key={index} className="mb-4">
+                <h3 className="font-semibold">{member.name}</h3>
+                <ul>
+                  {member.transactions.map((txn, i) => (
+                    <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
+                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {txn.amount.toLocaleString()} VND
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
+            <ul>
+              {events.map((event, index) => (
+                <li key={index}>
+                  {event.date}: Tổng chi phí {event.totalCost.toLocaleString()} VND, Thành viên: {event.participants.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    };
+
+    try {
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+      console.log("ReactDOM.createRoot called successfully");
+    } catch (e) {
+      console.error("Error rendering React app:", e);
+    }
+  </script>
 </body>
 </html>
