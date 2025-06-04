@@ -8,11 +8,23 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect } = React;
+
+    // Khởi tạo Supabase client
+    let supabase;
+    if (typeof window.supabase !== "undefined") {
+      supabase = window.supabase.createClient(
+        "https://xlshingqqouzqbljysmi.supabase.co", // Thay bằng SUPABASE_URL từ Dashboard
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsc2hpbmdxcW91enFibGp5c21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzQxODYsImV4cCI6MjA2NDYxMDE4Nn0.v9YlKzHEA4a5Ib1LP7Bd_1m1zHFBw_2CjgCBDXmwixQ" // Thay bằng SUPABASE_ANON_KEY từ Dashboard
+      );
+    } else {
+      console.error("Supabase library not loaded. Please check the CDN.");
+    }
 
     const App = () => {
       const [members, setMembers] = useState([]);
@@ -22,91 +34,137 @@
       const [newEvent, setNewEvent] = useState({ totalCost: 0, participants: [], date: "" });
       const [contributions, setContributions] = useState([]);
       const [contributionInputs, setContributionInputs] = useState({});
-      const [activeTab, setActiveTab] = useState("addMember"); // State cho tab hiện tại
+      const [activeTab, setActiveTab] = useState("addMember");
 
       console.log("App component initialized");
 
-      // Load data from localStorage
+      // Load data from Supabase
       useEffect(() => {
-        try {
-          const savedMembers = JSON.parse(localStorage.getItem("members")) || [];
-          const savedInactiveMembers = JSON.parse(localStorage.getItem("inactiveMembers")) || [];
-          const savedEvents = JSON.parse(localStorage.getItem("events")) || [];
-          const savedContributions = JSON.parse(localStorage.getItem("contributions")) || [];
-          setMembers(savedMembers);
-          setInactiveMembers(savedInactiveMembers);
-          setEvents(savedEvents);
-          setContributions(savedContributions);
-          console.log("Data loaded from localStorage:", { savedMembers, savedInactiveMembers, savedEvents, savedContributions });
-        } catch (e) {
-          console.error("Error loading data from localStorage:", e);
-        }
+        if (!supabase) return;
+        const fetchData = async () => {
+          try {
+            const { data: membersData } = await supabase.from("members").select("*");
+            const { data: inactiveMembersData } = await supabase.from("inactive_members").select("*");
+            const { data: eventsData } = await supabase.from("events").select("*");
+            const { data: contributionsData } = await supabase.from("contributions").select("*");
+            setMembers(membersData || []);
+            setInactiveMembers(inactiveMembersData || []);
+            setEvents(eventsData || []);
+            setContributions(contributionsData || []);
+            console.log("Data loaded from Supabase:", { membersData, inactiveMembersData, eventsData, contributionsData });
+          } catch (e) {
+            console.error("Error loading data from Supabase:", e);
+          }
+        };
+        fetchData();
       }, []);
 
-      // Save data to localStorage
-      useEffect(() => {
+      const addMember = async () => {
+        if (!supabase || !newMemberName.trim()) return;
         try {
-          localStorage.setItem("members", JSON.stringify(members));
-          localStorage.setItem("inactiveMembers", JSON.stringify(inactiveMembers));
-          localStorage.setItem("events", JSON.stringify(events));
-          localStorage.setItem("contributions", JSON.stringify(contributions));
-          console.log("Data saved to localStorage");
-        } catch (e) {
-          console.error("Error saving data to localStorage:", e);
-        }
-      }, [members, inactiveMembers, events, contributions]);
-
-      const addMember = () => {
-        if (newMemberName.trim()) {
-          setMembers([...members, { name: newMemberName, balance: 0, transactions: [] }]);
+          const { data } = await supabase
+            .from("members")
+            .insert([{ name: newMemberName, balance: 0, transactions: [] }])
+            .select();
+          setMembers([...members, data[0]]);
           setNewMemberName("");
           console.log("Added member:", newMemberName);
+        } catch (e) {
+          console.error("Error adding member:", e);
         }
       };
 
-      const removeMember = (index) => {
+      const removeMember = async (index) => {
+        if (!supabase) return;
         const member = members[index];
-        setInactiveMembers([...inactiveMembers, member]);
-        setMembers(members.filter((_, i) => i !== index));
-        console.log("Removed member:", member.name);
+        try {
+          await supabase.from("inactive_members").insert([member]);
+          await supabase.from("members").delete().eq("id", member.id);
+          setInactiveMembers([...inactiveMembers, member]);
+          setMembers(members.filter((_, i) => i !== index));
+          console.log("Removed member:", member.name);
+        } catch (e) {
+          console.error("Error removing member:", e);
+        }
       };
 
-      const reactivateMember = (index) => {
+      const reactivateMember = async (index) => {
+        if (!supabase) return;
         const member = inactiveMembers[index];
-        setMembers([...members, member]);
-        setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
-        console.log("Reactivated member:", member.name);
+        try {
+          await supabase.from("members").insert([member]);
+          await supabase.from("inactive_members").delete().eq("id", member.id);
+          setMembers([...members, member]);
+          setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
+          console.log("Reactivated member:", member.name);
+        } catch (e) {
+          console.error("Error reactivating member:", e);
+        }
       };
 
-      const addContribution = (memberIndex) => {
+      const addContribution = async (memberIndex) => {
+        if (!supabase) return;
         const amount = parseFloat(contributionInputs[memberIndex] || 0);
         if (amount <= 0 || isNaN(amount)) return;
-        const updatedMembers = [...members];
-        const member = updatedMembers[memberIndex];
-        member.balance += amount;
-        member.transactions.push({ type: "contribution", amount, date: new Date().toLocaleDateString() });
-        setMembers(updatedMembers);
-        setContributions([...contributions, { member: member.name, amount, date: new Date().toLocaleDateString() }]);
-        setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
-        console.log("Added contribution for", member.name, ":", amount);
+        const member = members[memberIndex];
+        try {
+          const updatedTransactions = [
+            ...(member.transactions || []),
+            { type: "contribution", amount, date: new Date().toLocaleDateString() },
+          ];
+          const { data } = await supabase
+            .from("members")
+            .update({ balance: member.balance + amount, transactions: updatedTransactions })
+            .eq("id", member.id)
+            .select();
+          await supabase
+            .from("contributions")
+            .insert([{ member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
+          setMembers(members.map((m, i) => (i === memberIndex ? data[0] : m)));
+          setContributions([...contributions, { member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
+          setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
+          console.log("Added contribution for", member.name, ":", amount);
+        } catch (e) {
+          console.error("Error adding contribution:", e);
+        }
       };
 
-      const addEvent = () => {
-        if (newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
+      const addEvent = async () => {
+        if (!supabase || newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
         const costPerPerson = newEvent.totalCost / newEvent.participants.length;
-        const updatedMembers = [...members];
         const eventDate = newEvent.date || new Date().toLocaleDateString();
-
-        newEvent.participants.forEach((memberIndex) => {
-          const member = updatedMembers[memberIndex];
-          member.balance -= costPerPerson;
-          member.transactions.push({ type: "meal", amount: costPerPerson, date: eventDate });
-        });
-
-        setMembers(updatedMembers);
-        setEvents([...events, { totalCost: newEvent.totalCost, participants: newEvent.participants.map(i => members[i].name), date: eventDate }]);
-        setNewEvent({ totalCost: 0, participants: [], date: "" });
-        console.log("Added event with total cost:", newEvent.totalCost);
+        try {
+          const updatedMembers = [...members];
+          for (const memberIndex of newEvent.participants) {
+            const member = updatedMembers[memberIndex];
+            const updatedTransactions = [
+              ...(member.transactions || []),
+              { type: "meal", amount: costPerPerson, date: eventDate },
+            ];
+            const { data } = await supabase
+              .from("members")
+              .update({ balance: member.balance - costPerPerson, transactions: updatedTransactions })
+              .eq("id", member.id)
+              .select();
+            updatedMembers[memberIndex] = data[0];
+          }
+          const { data: eventData } = await supabase
+            .from("events")
+            .insert([
+              {
+                total_cost: newEvent.totalCost,
+                participants: newEvent.participants.map((i) => members[i].name),
+                date: eventDate,
+              },
+            ])
+            .select();
+          setMembers(updatedMembers);
+          setEvents([...events, eventData[0]]);
+          setNewEvent({ totalCost: 0, participants: [], date: "" });
+          console.log("Added event with total cost:", newEvent.totalCost);
+        } catch (e) {
+          console.error("Error adding event:", e);
+        }
       };
 
       const toggleParticipant = (index) => {
@@ -121,9 +179,37 @@
         setContributionInputs({ ...contributionInputs, [index]: value });
       };
 
+      const clearData = async () => {
+        if (!supabase) return;
+        if (window.confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu? Hành động này không thể hoàn tác.")) {
+          try {
+            await supabase.from("members").delete().gte("id", 0);
+            await supabase.from("inactive_members").delete().gte("id", 0);
+            await supabase.from("events").delete().gte("id", 0);
+            await supabase.from("contributions").delete().gte("id", 0);
+            setMembers([]);
+            setInactiveMembers([]);
+            setEvents([]);
+            setContributions([]);
+            console.log("All data cleared from Supabase");
+            window.location.reload();
+          } catch (e) {
+            console.error("Error clearing data:", e);
+          }
+        }
+      };
+
       return (
         <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen">
-          <h1 className="text-3xl font-bold mb-6 text-center">Quản lý quỹ cơm</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-center">Quản lý quỹ cơm</h1>
+            <button
+              onClick={clearData}
+              className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+            >
+              Xóa dữ liệu
+            </button>
+          </div>
 
           {/* Tabs */}
           <div className="flex mb-6 border-b border-gray-200">
@@ -168,7 +254,7 @@
             <div className="mb-6 bg-white p-4 rounded shadow">
               <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
               {members.map((member, index) => (
-                <div key={index} className="mb-2 flex items-center">
+                <div key={member.id} className="mb-2 flex items-center">
                   <span className="mr-2">{member.name}: </span>
                   <input
                     type="number"
@@ -206,7 +292,7 @@
               />
               <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
               {members.map((member, index) => (
-                <div key={index} className="flex items-center mb-2">
+                <div key={member.id} className="flex items-center mb-2">
                   <input
                     type="checkbox"
                     checked={newEvent.participants.includes(index)}
@@ -238,7 +324,7 @@
               </thead>
               <tbody>
                 {members.map((member, index) => (
-                  <tr key={index}>
+                  <tr key={member.id}>
                     <td className="border p-2">{member.name}</td>
                     <td className="border p-2">{member.balance.toLocaleString()}</td>
                     <td className="border p-2">
@@ -268,7 +354,7 @@
               </thead>
               <tbody>
                 {inactiveMembers.map((member, index) => (
-                  <tr key={index}>
+                  <tr key={member.id}>
                     <td className="border p-2">{member.name}</td>
                     <td className="border p-2">{member.balance.toLocaleString()}</td>
                     <td className="border p-2">
@@ -289,10 +375,10 @@
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
             {members.map((member, index) => (
-              <div key={index} className="mb-4">
+              <div key={member.id} className="mb-4">
                 <h3 className="font-semibold">{member.name}</h3>
                 <ul>
-                  {member.transactions.map((txn, i) => (
+                  {(member.transactions || []).map((txn, i) => (
                     <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
                       {txn.date}: {txn.type === "contribution" ? "+" : "-"} {txn.amount.toLocaleString()} VND
                     </li>
@@ -307,8 +393,8 @@
             <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
             <ul>
               {events.map((event, index) => (
-                <li key={index}>
-                  {event.date}: Tổng chi phí {event.totalCost.toLocaleString()} VND, Thành viên: {event.participants.join(", ")}
+                <li key={event.id}>
+                  {event.date}: Tổng chi phí {event.total_cost.toLocaleString()} VND, Thành viên: {event.participants.join(", ")}
                 </li>
               ))}
             </ul>
