@@ -21,6 +21,8 @@
       const [events, setEvents] = useState([]);
       const [newEvent, setNewEvent] = useState({ totalCost: 0, participants: [], date: "" });
       const [contributions, setContributions] = useState([]);
+      const [contributionInputs, setContributionInputs] = useState({});
+      const [activeTab, setActiveTab] = useState("addMember"); // State cho tab hiện tại
 
       console.log("App component initialized");
 
@@ -76,14 +78,16 @@
         console.log("Reactivated member:", member.name);
       };
 
-      const addContribution = (memberIndex, amount) => {
-        if (amount <= 0) return;
+      const addContribution = (memberIndex) => {
+        const amount = parseFloat(contributionInputs[memberIndex] || 0);
+        if (amount <= 0 || isNaN(amount)) return;
         const updatedMembers = [...members];
         const member = updatedMembers[memberIndex];
         member.balance += amount;
         member.transactions.push({ type: "contribution", amount, date: new Date().toLocaleDateString() });
         setMembers(updatedMembers);
         setContributions([...contributions, { member: member.name, amount, date: new Date().toLocaleDateString() }]);
+        setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
         console.log("Added contribution for", member.name, ":", amount);
       };
 
@@ -113,22 +117,115 @@
         console.log("Toggled participant:", members[index]?.name || "Unknown");
       };
 
+      const handleContributionInput = (index, value) => {
+        setContributionInputs({ ...contributionInputs, [index]: value });
+      };
+
       return (
         <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen">
           <h1 className="text-3xl font-bold mb-6 text-center">Quản lý quỹ cơm</h1>
-          <div className="mb-6 bg-white p-4 rounded shadow">
-            <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
-            <input
-              type="text"
-              value={newMemberName}
-              onChange={(e) => setNewMemberName(e.target.value)}
-              placeholder="Tên thành viên"
-              className="border p-2 mr-2 rounded"
-            />
-            <button onClick={addMember} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-              Thêm
+
+          {/* Tabs */}
+          <div className="flex mb-6 border-b border-gray-200">
+            <button
+              className={`px-4 py-2 font-semibold ${activeTab === "addMember" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-600"}`}
+              onClick={() => setActiveTab("addMember")}
+            >
+              Thêm thành viên
+            </button>
+            <button
+              className={`px-4 py-2 font-semibold ${activeTab === "contribute" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-600"}`}
+              onClick={() => setActiveTab("contribute")}
+            >
+              Nộp quỹ
+            </button>
+            <button
+              className={`px-4 py-2 font-semibold ${activeTab === "addEvent" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-600"}`}
+              onClick={() => setActiveTab("addEvent")}
+            >
+              Thêm sự kiện
             </button>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === "addMember" && (
+            <div className="mb-6 bg-white p-4 rounded shadow">
+              <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
+              <input
+                type="text"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+                placeholder="Tên thành viên"
+                className="border p-2 mr-2 rounded"
+              />
+              <button onClick={addMember} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Thêm
+              </button>
+            </div>
+          )}
+
+          {activeTab === "contribute" && (
+            <div className="mb-6 bg-white p-4 rounded shadow">
+              <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
+              {members.map((member, index) => (
+                <div key={index} className="mb-2 flex items-center">
+                  <span className="mr-2">{member.name}: </span>
+                  <input
+                    type="number"
+                    value={contributionInputs[index] || ""}
+                    onChange={(e) => handleContributionInput(index, e.target.value)}
+                    placeholder="Số tiền (VND)"
+                    className="border p-2 mr-2 rounded"
+                  />
+                  <button
+                    onClick={() => addContribution(index)}
+                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                  >
+                    Nộp
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "addEvent" && (
+            <div className="mb-6 bg-white p-4 rounded shadow">
+              <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
+              <input
+                type="number"
+                value={newEvent.totalCost || ""}
+                onChange={(e) => setNewEvent({ ...newEvent, totalCost: parseFloat(e.target.value) || 0 })}
+                placeholder="Tổng chi phí (VND)"
+                className="border p-2 mb-2 w-full rounded"
+              />
+              <input
+                type="date"
+                value={newEvent.date}
+                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                className="border p-2 mb-2 w-full rounded"
+              />
+              <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
+              {members.map((member, index) => (
+                <div key={index} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={newEvent.participants.includes(index)}
+                    onChange={() => toggleParticipant(index)}
+                    className="mr-2"
+                  />
+                  <span>{member.name}</span>
+                </div>
+              ))}
+              <button
+                onClick={addEvent}
+                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-2"
+              >
+                Thêm sự kiện
+              </button>
+            </div>
+          )}
+
+          {/* Danh sách thành viên */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
             <table className="w-full border-collapse">
@@ -157,6 +254,8 @@
               </tbody>
             </table>
           </div>
+
+          {/* Thành viên cũ */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
             <table className="w-full border-collapse">
@@ -185,57 +284,8 @@
               </tbody>
             </table>
           </div>
-          <div className="mb-6 bg-white p-4 rounded shadow">
-            <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
-            {members.map((member, index) => (
-              <div key={index} className="mb-2">
-                <span>{member.name}: </span>
-                <input
-                  type="number"
-                  placeholder="Số tiền (VND)"
-                  className="border p-2 mr-2 rounded"
-                  onChange={(e) => {
-                    const amount = parseFloat(e.target.value);
-                    if (amount > 0) addContribution(index, amount);
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mb-6 bg-white p-4 rounded shadow">
-            <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
-            <input
-              type="number"
-              value={newEvent.totalCost || ""}
-              onChange={(e) => setNewEvent({ ...newEvent, totalCost: parseFloat(e.target.value) || 0 })}
-              placeholder="Tổng chi phí (VND)"
-              className="border p-2 mb-2 w-full rounded"
-            />
-            <input
-              type="date"
-              value={newEvent.date}
-              onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-              className="border p-2 mb-2 w-full rounded"
-            />
-            <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
-            {members.map((member, index) => (
-              <div key={index} className="flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  checked={newEvent.participants.includes(index)}
-                  onChange={() => toggleParticipant(index)}
-                  className="mr-2"
-                />
-                <span>{member.name}</span>
-              </div>
-            ))}
-            <button
-              onClick={addEvent}
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-2"
-            >
-              Thêm sự kiện
-            </button>
-          </div>
+
+          {/* Lịch sử giao dịch */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
             {members.map((member, index) => (
@@ -251,6 +301,8 @@
               </div>
             ))}
           </div>
+
+          {/* Lịch sử sự kiện nhóm */}
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
             <ul>
