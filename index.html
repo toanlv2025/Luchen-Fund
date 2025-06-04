@@ -22,7 +22,6 @@
       const [newEvent, setNewEvent] = useState({ totalCost: 0, participants: [], date: "" });
       const [contributions, setContributions] = useState([]);
 
-      // Load data from localStorage on mount
       useEffect(() => {
         const savedMembers = JSON.parse(localStorage.getItem("members")) || [];
         const savedInactiveMembers = JSON.parse(localStorage.getItem("inactiveMembers")) || [];
@@ -34,7 +33,6 @@
         setContributions(savedContributions);
       }, []);
 
-      // Save data to localStorage whenever state changes
       useEffect(() => {
         localStorage.setItem("members", JSON.stringify(members));
         localStorage.setItem("inactiveMembers", JSON.stringify(inactiveMembers));
@@ -42,7 +40,6 @@
         localStorage.setItem("contributions", JSON.stringify(contributions));
       }, [members, inactiveMembers, events, contributions]);
 
-      // Add new member
       const addMember = () => {
         if (newMemberName.trim()) {
           setMembers([...members, { name: newMemberName, balance: 0, transactions: [] }]);
@@ -50,21 +47,18 @@
         }
       };
 
-      // Remove member (move to inactive)
       const removeMember = (index) => {
         const member = members[index];
         setInactiveMembers([...inactiveMembers, member]);
         setMembers(members.filter((_, i) => i !== index));
       };
 
-      // Reactivate member
       const reactivateMember = (index) => {
         const member = inactiveMembers[index];
         setMembers([...members, member]);
         setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
       };
 
-      // Add contribution
       const addContribution = (memberIndex, amount) => {
         if (amount <= 0) return;
         const updatedMembers = [...members];
@@ -75,7 +69,6 @@
         setContributions([...contributions, { member: member.name, amount, date: new Date().toLocaleDateString() }]);
       };
 
-      // Add new event (meal)
       const addEvent = () => {
         if (newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
         const costPerPerson = newEvent.totalCost / newEvent.participants.length;
@@ -93,7 +86,6 @@
         setNewEvent({ totalCost: 0, participants: [], date: "" });
       };
 
-      // Handle participant checkbox
       const toggleParticipant = (index) => {
         const participants = newEvent.participants.includes(index)
           ? newEvent.participants.filter((i) => i !== index)
@@ -104,8 +96,6 @@
       return (
         <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen">
           <h1 className="text-3xl font-bold mb-6 text-center">Quản lý quỹ cơm</h1>
-
-          {/* Add Member */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
             <input
@@ -119,8 +109,6 @@
               Thêm
             </button>
           </div>
-
-          {/* Member List */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
             <table className="w-full border-collapse">
@@ -149,8 +137,6 @@
               </tbody>
             </table>
           </div>
-
-          {/* Inactive Members */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
             <table className="w-full border-collapse">
@@ -179,8 +165,6 @@
               </tbody>
             </table>
           </div>
-
-          {/* Add Contribution */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
             {members.map((member, index) => (
@@ -198,8 +182,6 @@
               </div>
             ))}
           </div>
-
-          {/* Add Event */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
             <input
@@ -234,8 +216,6 @@
               Thêm sự kiện
             </button>
           </div>
-
-          {/* Transaction History */}
           <div className="mb-6 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
             {members.map((member, index) => (
@@ -251,8 +231,6 @@
               </div>
             ))}
           </div>
-
-          {/* Group Event History */}
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
             <ul>
