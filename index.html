@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý quỹ cơm</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@7.24.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const App = () => {
+      const [members, setMembers] = useState([]);
+      const [inactiveMembers, setInactiveMembers] = useState([]);
+      const [newMemberName, setNewMemberName] = useState("");
+      const [events, setEvents] = useState([]);
+      const [newEvent, setNewEvent] = useState({ totalCost: 0, participants: [], date: "" });
+      const [contributions, setContributions] = useState([]);
+
+      // Load data from localStorage on mount
+      useEffect(() => {
+        const savedMembers = JSON.parse(localStorage.getItem("members")) || [];
+        const savedInactiveMembers = JSON.parse(localStorage.getItem("inactiveMembers")) || [];
+        const savedEvents = JSON.parse(localStorage.getItem("events")) || [];
+        const savedContributions = JSON.parse(localStorage.getItem("contributions")) || [];
+        setMembers(savedMembers);
+        setInactiveMembers(savedInactiveMembers);
+        setEvents(savedEvents);
+        setContributions(savedContributions);
+      }, []);
+
+      // Save data to localStorage whenever state changes
+      useEffect(() => {
+        localStorage.setItem("members", JSON.stringify(members));
+        localStorage.setItem("inactiveMembers", JSON.stringify(inactiveMembers));
+        localStorage.setItem("events", JSON.stringify(events));
+        localStorage.setItem("contributions", JSON.stringify(contributions));
+      }, [members, inactiveMembers, events, contributions]);
+
+      // Add new member
+      const addMember = () => {
+        if (newMemberName.trim()) {
+          setMembers([...members, { name: newMemberName, balance: 0, transactions: [] }]);
+          setNewMemberName("");
+        }
+      };
+
+      // Remove member (move to inactive)
+      const removeMember = (index) => {
+        const member = members[index];
+        setInactiveMembers([...inactiveMembers, member]);
+        setMembers(members.filter((_, i) => i !== index));
+      };
+
+      // Reactivate member
+      const reactivateMember = (index) => {
+        const member = inactiveMembers[index];
+        setMembers([...members, member]);
+        setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
+      };
+
+      // Add contribution
+      const addContribution = (memberIndex, amount) => {
+        if (amount <= 0) return;
+        const updatedMembers = [...members];
+        const member = updatedMembers[memberIndex];
+        member.balance += amount;
+        member.transactions.push({ type: "contribution", amount, date: new Date().toLocaleDateString() });
+        setMembers(updatedMembers);
+        setContributions([...contributions, { member: member.name, amount, date: new Date().toLocaleDateString() }]);
+      };
+
+      // Add new event (meal)
+      const addEvent = () => {
+        if (newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
+        const costPerPerson = newEvent.totalCost / newEvent.participants.length;
+        const updatedMembers = [...members];
+        const eventDate = newEvent.date || new Date().toLocaleDateString();
+
+        newEvent.participants.forEach((memberIndex) => {
+          const member = updatedMembers[memberIndex];
+          member.balance -= costPerPerson;
+          member.transactions.push({ type: "meal", amount: costPerPerson, date: eventDate });
+        });
+
+        setMembers(updatedMembers);
+        setEvents([...events, { totalCost: newEvent.totalCost, participants: newEvent.participants.map(i => members[i].name), date: eventDate }]);
+        setNewEvent({ totalCost: 0, participants: [], date: "" });
+      };
+
+      // Handle participant checkbox
+      const toggleParticipant = (index) => {
+        const participants = newEvent.participants.includes(index)
+          ? newEvent.participants.filter((i) => i !== index)
+          : [...newEvent.participants, index];
+        setNewEvent({ ...newEvent, participants });
+      };
+
+      return (
+        <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen">
+          <h1 className="text-3xl font-bold mb-6 text-center">Quản lý quỹ cơm</h1>
+
+          {/* Add Member */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
+            <input
+              type="text"
+              value={newMemberName}
+              onChange={(e) => setNewMemberName(e.target.value)}
+              placeholder="Tên thành viên"
+              className="border p-2 mr-2 rounded"
+            />
+            <button onClick={addMember} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+              Thêm
+            </button>
+          </div>
+
+          {/* Member List */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member, index) => (
+                  <tr key={index}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => removeMember(index)}
+                        className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
+                      >
+                        Loại bỏ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Inactive Members */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inactiveMembers.map((member, index) => (
+                  <tr key={index}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => reactivateMember(index)}
+                        className="bg-green-500 text-white p-1 rounded hover:bg-green-600"
+                      >
+                        Kích hoạt lại
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Add Contribution */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
+            {members.map((member, index) => (
+              <div key={index} className="mb-2">
+                <span>{member.name}: </span>
+                <input
+                  type="number"
+                  placeholder="Số tiền (VND)"
+                  className="border p-2 mr-2 rounded"
+                  onChange={(e) => {
+                    const amount = parseFloat(e.target.value);
+                    if (amount > 0) addContribution(index, amount);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Add Event */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
+            <input
+              type="number"
+              value={newEvent.totalCost || ""}
+              onChange={(e) => setNewEvent({ ...newEvent, totalCost: parseFloat(e.target.value) || 0 })}
+              placeholder="Tổng chi phí (VND)"
+              className="border p-2 mb-2 w-full rounded"
+            />
+            <input
+              type="date"
+              value={newEvent.date}
+              onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+              className="border p-2 mb-2 w-full rounded"
+            />
+            <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
+            {members.map((member, index) => (
+              <div key={index} className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  checked={newEvent.participants.includes(index)}
+                  onChange={() => toggleParticipant(index)}
+                  className="mr-2"
+                />
+                <span>{member.name}</span>
+              </div>
+            ))}
+            <button
+              onClick={addEvent}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-2"
+            >
+              Thêm sự kiện
+            </button>
+          </div>
+
+          {/* Transaction History */}
+          <div className="mb-6 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
+            {members.map((member, index) => (
+              <div key={index} className="mb-4">
+                <h3 className="font-semibold">{member.name}</h3>
+                <ul>
+                  {member.transactions.map((txn, i) => (
+                    <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
+                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {txn.amount.toLocaleString()} VND
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Group Event History */}
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
+            <ul>
+              {events.map((event, index) => (
+                <li key={index}>
+                  {event.date}: Tổng chi phí {event.totalCost.toLocaleString()} VND, Thành viên: {event.participants.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
