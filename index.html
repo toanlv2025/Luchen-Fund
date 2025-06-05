@@ -15,6 +15,11 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
+    // Hàm định dạng tiền tệ VND
+    const formatVND = (number) => {
+      return Math.floor(number).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
     // Khởi tạo Supabase client
     let supabase;
     if (typeof window.supabase !== "undefined") {
@@ -104,7 +109,7 @@
 
       const addContribution = async (memberIndex) => {
         if (!supabase) return;
-        const amount = parseFloat(contributionInputs[memberIndex] || 0);
+        const amount = Math.floor(parseFloat(contributionInputs[memberIndex] || 0));
         if (amount <= 0 || isNaN(amount)) return;
         const member = members[memberIndex];
         try {
@@ -131,7 +136,7 @@
 
       const addEvent = async () => {
         if (!supabase || newEvent.totalCost <= 0 || newEvent.participants.length === 0) return;
-        const costPerPerson = newEvent.totalCost / newEvent.participants.length;
+        const costPerPerson = Math.floor(newEvent.totalCost / newEvent.participants.length);
         const eventDate = newEvent.date || new Date().toLocaleDateString();
         try {
           const updatedMembers = [...members];
@@ -205,7 +210,7 @@
             <h1 className="text-3xl font-bold text-center">Quản lý quỹ cơm</h1>
             <button
               onClick={clearData}
-              className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+              className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
             >
               Xóa dữ liệu
             </button>
@@ -235,62 +240,70 @@
 
           {/* Tab Content */}
           {activeTab === "addMember" && (
-            <div className="mb-6 bg-white p-4 rounded shadow">
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
-              <input
-                type="text"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                placeholder="Tên thành viên"
-                className="border p-2 mr-2 rounded"
-              />
-              <button onClick={addMember} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                Thêm
-              </button>
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Tên thành viên"
+                  className="border border-gray-300 p-2 mr-2 rounded-lg flex-grow"
+                />
+                <button onClick={addMember} className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600">
+                  Thêm
+                </button>
+              </div>
             </div>
           )}
 
           {activeTab === "contribute" && (
-            <div className="mb-6 bg-white p-4 rounded shadow">
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
-              {members.map((member, index) => (
-                <div key={member.id} className="mb-2 flex items-center">
-                  <span className="mr-2">{member.name}: </span>
-                  <input
-                    type="number"
-                    value={contributionInputs[index] || ""}
-                    onChange={(e) => handleContributionInput(index, e.target.value)}
-                    placeholder="Số tiền (VND)"
-                    className="border p-2 mr-2 rounded"
-                  />
-                  <button
-                    onClick={() => addContribution(index)}
-                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                  >
-                    Nộp
-                  </button>
-                </div>
-              ))}
+              <div className="space-y-2">
+                {members.map((member, index) => (
+                  <div key={member.id} className="flex items-center">
+                    <span className="w-32 text-right mr-2">{member.name}:</span>
+                    <input
+                      type="number"
+                      value={contributionInputs[index] || ""}
+                      onChange={(e) => handleContributionInput(index, e.target.value)}
+                      placeholder="Số tiền (VND)"
+                      className="border border-gray-300 p-2 mr-2 rounded-lg w-40"
+                      min="0"
+                      step="1"
+                    />
+                    <button
+                      onClick={() => addContribution(index)}
+                      className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                      Nộp
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {activeTab === "addEvent" && (
-            <div className="mb-6 bg-white p-4 rounded shadow">
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
               <input
                 type="number"
                 value={newEvent.totalCost || ""}
-                onChange={(e) => setNewEvent({ ...newEvent, totalCost: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setNewEvent({ ...newEvent, totalCost: Math.floor(parseFloat(e.target.value) || 0) })}
                 placeholder="Tổng chi phí (VND)"
-                className="border p-2 mb-2 w-full rounded"
+                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
+                min="0"
+                step="1"
               />
               <input
                 type="date"
                 value={newEvent.date}
                 onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                className="border p-2 mb-2 w-full rounded"
+                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
               />
-              <h3 className="font-semibold">Chọn thành viên tham gia:</h3>
+              <h3 className="font-semibold mb-2">Chọn thành viên tham gia:</h3>
               {members.map((member, index) => (
                 <div key={member.id} className="flex items-center mb-2">
                   <input
@@ -304,7 +317,7 @@
               ))}
               <button
                 onClick={addEvent}
-                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-2"
+                className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 mt-2"
               >
                 Thêm sự kiện
               </button>
@@ -312,7 +325,7 @@
           )}
 
           {/* Danh sách thành viên */}
-          <div className="mb-6 bg-white p-4 rounded shadow">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
             <table className="w-full border-collapse">
               <thead>
@@ -326,11 +339,11 @@
                 {members.map((member, index) => (
                   <tr key={member.id}>
                     <td className="border p-2">{member.name}</td>
-                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
                     <td className="border p-2">
                       <button
                         onClick={() => removeMember(index)}
-                        className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
                       >
                         Loại bỏ
                       </button>
@@ -342,7 +355,7 @@
           </div>
 
           {/* Thành viên cũ */}
-          <div className="mb-6 bg-white p-4 rounded shadow">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
             <table className="w-full border-collapse">
               <thead>
@@ -356,11 +369,11 @@
                 {inactiveMembers.map((member, index) => (
                   <tr key={member.id}>
                     <td className="border p-2">{member.name}</td>
-                    <td className="border p-2">{member.balance.toLocaleString()}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
                     <td className="border p-2">
                       <button
                         onClick={() => reactivateMember(index)}
-                        className="bg-green-500 text-white p-1 rounded hover:bg-green-600"
+                        className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
                       >
                         Kích hoạt lại
                       </button>
@@ -372,7 +385,7 @@
           </div>
 
           {/* Lịch sử giao dịch */}
-          <div className="mb-6 bg-white p-4 rounded shadow">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
             {members.map((member, index) => (
               <div key={member.id} className="mb-4">
@@ -380,7 +393,7 @@
                 <ul>
                   {(member.transactions || []).map((txn, i) => (
                     <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
-                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {txn.amount.toLocaleString()} VND
+                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
                     </li>
                   ))}
                 </ul>
@@ -389,12 +402,12 @@
           </div>
 
           {/* Lịch sử sự kiện nhóm */}
-          <div className="bg-white p-4 rounded shadow">
+          <div className="bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
             <ul>
               {events.map((event, index) => (
                 <li key={event.id}>
-                  {event.date}: Tổng chi phí {event.total_cost.toLocaleString()} VND, Thành viên: {event.participants.join(", ")}
+                  {event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
                 </li>
               ))}
             </ul>
