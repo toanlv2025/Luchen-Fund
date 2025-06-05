@@ -80,7 +80,7 @@
                 setUser({ email: session.user.email, role: "admin", isAdminUser: true });
               }
             }
-          }) catch (error) {
+          } catch (error) {
             console.error("Error checking session:", error);
           }
         };
@@ -92,10 +92,10 @@
         if (!user) return;
         const fetchData = async () => {
           try {
-            const { data: membersData } = await supabase.from("members").select();
-            const { data: inactiveMembersData } = await supabase.from("inactive_members").select();
-            const { data: eventsData } = await supabase.from("events").select();
-            const { data: contributionsData } = await supabase.from("contributions").select();
+            const { data: membersData } = await supabase.from("members").select("*");
+            const { data: inactiveMembersData } = await supabase.from("inactive_members").select("*");
+            const { data: eventsData } = await supabase.from("events").select("*");
+            const { data: contributionsData } = await supabase.from("contributions").select("*");
             setMembers(membersData || []);
             setInactiveMembers(inactiveMembersData || []);
             setEvents(eventsData || []);
@@ -125,7 +125,7 @@
           } else if (session.user.email === "admin@luchenfund.com") {
             setUser({ email: session.user.email, role: "admin", isAdminUser: true });
           } else {
-            throw new Error("Invalid account");
+            throw new Error("Tài khoản không hợp lệ");
           }
           setEmail("");
           setPassword("");
@@ -152,7 +152,7 @@
       };
 
       const addMember = async () => {
-        if (!user || !newMemberName.trim() || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!newMemberName.trim() || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const memberEmail = `${newMemberName.toLowerCase().replace(/\s+/g, "")}@luchenfund.com`;
         const memberPassword = newMemberRole === "admin" ? "bidv123456" : "123456";
         try {
@@ -242,10 +242,10 @@
           await supabase.from("members").insert([member]);
           await supabase.from("inactive_members").delete().eq("id", member.id);
           setMembers([...members, member]);
-          setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
-          const total = [...members, member].reduce((sum, m) => sum + m.balance, 0);
+          setInactiveMembers(inactiveMembers.filter((m, i) => i !== index));
+          const total = [...members, member].reduce((sum, m) => sum + m.balance, totalBalance);
           setTotalBalance(total);
-          console.log("Reactivated member:", member.name);
+          console.log("Member reactivated:", member.name);
         } catch (error) {
           console.error("Error reactivating member:", error);
         }
@@ -254,27 +254,27 @@
       const addContribution = async (memberIndex) => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const rawAmount = contributionInputs[memberIndex] || "";
-        const amount = Math.floor(parseInt(rawAmount.replace(/[^0-9]/g, ""), 10) || 0);
+        const amount = Math.floor(parseInt(rawAmount.replace(/[^0-9]/g, "")) || 0);
         if (amount <= 0 || isNaN(amount)) return;
-        const member = members[memberIndex];
+        const memberData = members[memberIndex];
         try {
           const updatedTransactions = [
-            ...(member.transactions || []),
+            ...(memberData.transactions || []),
             { type: "contribution", amount, date: new Date().toLocaleDateString() },
           ];
           const { data } = await supabase
             .from("members")
-            .update({ balance: member.balance + amount, transactions: updatedTransactions })
-            .eq("id", member.id)
+            .update({ balance: memberData.balance + amount, transactions: updatedTransactions] })
+            .eq("id", memberData.id)
             .select();
           await supabase
             .from("contributions")
-            .insert([{ member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
-          setMembers(members.map((m, i) => (i === memberIndex ? data[0] : m)));
-          setContributions([...contributions, { member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
+            .insert([{ member_name: memberData.name, amount, date: new Date().toLocaleDateString() }]);
+          setMembers(members.map((m, i) => i === memberIndex ? data[0] : m));
+          setContributions([...contributions, { member_name: memberData.name, amount, date: new Date().toLocaleDateString() }]);
           setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
           setTotalBalance(totalBalance + amount);
-          console.log("Added contribution for", member.name, ":", amount);
+          console.log("Contribution added for", memberData.name, ":", amount);
         } catch (error) {
           console.error("Error adding contribution:", error);
         }
@@ -283,40 +283,38 @@
       const addEvent = async () => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser) || !newEvent.totalCost || newEvent.participants.length === 0) return;
         const rawCost = newEvent.totalCost.replace(/[^0-9]/g, "");
-        const totalCost = Math.floor(parseInt(rawCost, 10) || 0);
+        const totalCost = Math.floor(parseInt(rawCost) || 0);
         if (totalCost <= 0) return;
-        const costPerPerson = Math.floor(totalCost / newEvent.participants.length);
-        const eventDate = newEvent.date || new Date().toLocaleDateString();
+        const costPerParticipant = Math.floor(totalCost / newEvent.participants.length);
+        const eventDate = newEvent.date || new Date().toDateString();
         try {
-          const updatedMembers = [...members];
+          const updatedMembers = [...membersData];
           for (const memberIndex of newEvent.participants) {
-            const member = updatedMembers[memberIndex];
+            const memberData = updatedMembers[memberIndex];
             const updatedTransactions = [
-              ...(member.transactions || []),
-              { type: "meal", amount: costPerPerson, date: eventDate },
+              ...(memberData.transactions || []),
+              { type: "meal", amount: costPerParticipant, date: eventDate },
             ];
             const { data } = await supabase
               .from("members")
-              .update({ balance: member.balance - costPerPerson, transactions: updatedTransactions })
-              .eq("id", member.id)
+              .update({ balance: memberData.balance - costPerParticipant, transactions: updatedTransactions })
+              .eq("id", memberData.id)
               .select();
             updatedMembers[memberIndex] = data[0];
           }
           const { data: eventData } = await supabase
             .from("events")
-            .insert([
-              {
-                total_cost: totalCost,
-                participants: newEvent.participants.map((i) => members[i].name),
-                date: eventDate,
-              },
-            ])
+            .insert([{
+              total_cost: totalCost,
+              participants: newEvent.participants.map((i) => membersData[i].name),
+              date: eventDate,
+            }])
             .select();
-          setMembers(updatedMembers);
+          setMembers(updatedEvents);
           setEvents([...events, eventData[0]]);
           setNewEvent({ totalCost: "", participants: [], date: "" });
           setTotalBalance(totalBalance - totalCost);
-          console.log("Added event with total cost:", totalCost);
+          console.log("Event added with total cost:", totalCost);
         } catch (error) {
           console.error("Error adding event:", error);
         }
@@ -324,11 +322,11 @@
 
       const toggleParticipant = (index) => {
         if (user?.role !== "admin" && !user?.isAdminUser) return;
-        const participants = newEvent.participants.includes(index)
+        const newParticipants = newEvent.participants.includes(index)
           ? newEvent.participants.filter((i) => i !== index)
           : [...newEvent.participants, index];
-        setNewEvent({ ...newEvent, participants });
-        console.log("Toggled participant:", members[index]?.name || "Unknown");
+        setNewEvent({ ...newEvent, participants: newParticipants });
+        console.log("Participant toggled:", members[index]?.name || "Unknown");
       };
 
       const handleContributionInput = (index, value) => {
