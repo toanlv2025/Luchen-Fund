@@ -582,144 +582,144 @@
                     </tr>
                   ))}
                 </tbody>
- </table>
-</div>
-)}
+              </table>
+            </div>
+          )}
 
-{editMember && (
-<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-<div className="bg-white p-6 rounded-lg shadow">
-<h2 className="text-xl font-semibold mb-4">Sửa vai trò</h2>
-<label className="block mb-2">Vai trò:</label>
-<select
-value={editMember.role}
-onChange={(e) => setEditMember({ ...editMember, role: e.target.value })}
-className="border border-gray-300 p-2 rounded-lg w-full mb-4"
->
-<option value="member">Thành viên</option>
-<option value="admin">Quản trị</option>
-</select>
-<div className="flex justify-end space-x-2">
-<button
-onClick={() => updateMemberRole(editMember.id, editMember.role)}
-className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
->
-Lưu
-</button>
-<button
-onClick={() => setEditMember(null)}
-className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
->
-Hủy
-</button>
-</div>
-</div>
-</div>
-)}
+          {editMember && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4">Sửa vai trò</h2>
+                <label className="block mb-2">Vai trò:</label>
+                <select
+                  value={editMember.role}
+                  onChange={(e) => setEditMember({ ...editMember, role: e.target.value })}
+                  className="border border-gray-300 p-2 rounded-lg w-full mb-4"
+                >
+                  <option value="member">Thành viên</option>
+                  <option value="admin">Quản trị</option>
+                </select>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => updateMemberRole(editMember.id, editMember.role)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    onClick={() => setEditMember(null)}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-<div className="mb-6 bg-white p-4 rounded-lg shadow">
-<h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
-<table className="w-full border-collapse">
-<thead>
-<tr className="bg-gray-200">
-<th className="border p-2">Tên</th>
-<th className="border p-2">Số dư (VND)</td>
-<th className="border p-2">Hành động</th>
-</tr>
-</thead>
-<tbody>
-{members.map((member, index) => (
-<tr key={member.id}>
-<td className="border p-2">{member.name}</td>
-<td className="border p-2">{formatVND(member.balance)}</td>
-<td className="border p-2">
-<button
-onClick={() => removeMember(index)}
-className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-disabled={user.role !== "admin" && !user.isAdminUser}
->
-Loại bỏ
-</button>
-</td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member, index) => (
+                  <tr key={member.id}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => removeMember(index)}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+                        disabled={user.role !== "admin" && !user.isAdminUser}
+                      >
+                        Loại bỏ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-<div className="mb-6 bg-white p-4 rounded-lg shadow">
-<h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
-<table className="w-full border-collapse">
-<thead>
-<tr className="bg-gray-200">
-<th className="border p-2">Tên</th>
-<th className="border p-2">Số dư (VND)</th>
-<th className="border p-2">Hành động</th>
-</tr>
-</thead>
-<tbody>
-{inactiveMembers.map((member, index) => (
-<tr key={member.id}>
-<td className="border p-2">{member.name}</td>
-<td className="border p-2">{formatVND(member.balance)}</td>
-<td className="border p-2">
-<button
-onClick={() => reactivateMember(index)}
-className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
-disabled={user.role !== "admin" && !user.isAdminUser}
->
-Kích hoạt lại
-</button>
-</td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inactiveMembers.map((member, index) => (
+                  <tr key={member.id}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => reactivateMember(index)}
+                        className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
+                        disabled={user.role !== "admin" && !user.isAdminUser}
+                      >
+                        Kích hoạt lại
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-<div className="mb-6 bg-white p-4 rounded-lg shadow">
-<h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
-{members.map((member) => (
-<div key={member.id} className="mb-4">
-<h3 className="font-semibold">{member.name}</h3>
-<ul>
-{(member.transactions || []).map((txn, i) => (
-<li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}}>
-{txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
-</li>
-))}
-</ul>
-</div>
-))}
-</div>
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
+            {members.map((member) => (
+              <div key={member.id} className="mb-4">
+                <h3 className="font-semibold">{member.name}</h3>
+                <ul>
+                  {(member.transactions || []).map((txn, i) => (
+                    <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
+                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
 
-<div className="bg-white p-4 rounded-lg shadow">
-<h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện</h2>
-<ul>
-{events.map((event) => (
-<li key={event.id}>
-{event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
-</li>
-))}
-</ul>
-</div>
-</div>
-);
-};
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện</h2>
+            <ul>
+              {events.map((event) => (
+                <li key={event.id}>
+                  {event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    };
 
-try {
-const root = ReactDOM.createRoot(document.getElementById("app"));
-root.render(<App />);
-console.log("ReactDOM.createRoot called");
-} catch (error) {
-console.error("Render error:", error);
-document.getElementById("app").innerHTML = `
-<div className="text-center text-red-600 p-5">
-<h1>Lỗi render</h1>
-<p>Kiểm tra console (F12).</p>
-</div>
-`;
-}
-</script>
+    try {
+      const root = ReactDOM.createRoot(document.getElementById("app"));
+      root.render(<App />);
+      console.log("ReactDOM.createRoot called");
+    } catch (error) {
+      console.error("Render error:", error);
+      document.getElementById("app").innerHTML = `
+        <div className="text-center text-red-600 p-5">
+          <h1>Lỗi render</h1>
+          <p>Kiểm tra console (F12).</p>
+        </div>
+      `;
+    }
+  </script>
 </body>
 </html>
