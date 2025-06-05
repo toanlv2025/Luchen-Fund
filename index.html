@@ -30,8 +30,8 @@
     let supabase;
     if (typeof window.supabase !== "undefined") {
       supabase = window.supabase.createClient(
-        "YOUR_SUPABASE_URL", // Thay bằng SUPABASE_URL
-        "YOUR_SUPABASE_ANON_KEY" // Thay bằng SUPABASE_ANON_KEY
+        "https://xlshingqqouzqbljysmi.supabase.co", // Thay bằng SUPABASE_URL
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsc2hpbmdxcW91enFibGp5c21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzQxODYsImV4cCI6MjA2NDYxMDE4Nn0.v9YlKzHEA4a5Ib1LP7Bd_1m1zHFBw_2CjgCBDXmwixQ" // Thay bằng SUPABASE_ANON_KEY
       );
     } else {
       console.error("Supabase library not loaded. Please check the CDN.");
