@@ -53,22 +53,35 @@
       const [totalBalance, setTotalBalance] = useState(0);
       const [editMember, setEditMember] = useState(null);
 
+      // Fallback UI nếu Supabase không tải
+      if (!supabase) {
+        return (
+          <div className="p-6 max-w-md mx-auto text-center">
+            <h1 className="text-2xl font-bold text-red-600">Lỗi khởi tạo</h1>
+            <p>Vui lòng kiểm tra kết nối mạng hoặc cấu hình Supabase.</p>
+          </div>
+        );
+      }
+
       // Kiểm tra trạng thái đăng nhập
       useEffect(() => {
-        if (!supabase) return;
         const checkSession = async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            const { data: memberData } = await supabase
-              .from("members")
-              .select("id, name, role, email, auth_user_id")
-              .eq("email", session.user.email)
-              .single();
-            if (memberData) {
-              setUser({ ...memberData, isAdminUser: false });
-            } else if (session.user.email === "admin@luchenfund.com") {
-              setUser({ email: session.user.email, role: "admin", isAdminUser: true });
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const { data: memberData } = await supabase
+                .from("members")
+                .select("id, name, role, email, auth_user_id")
+                .eq("email", session.user.email)
+                .single();
+              if (memberData) {
+                setUser({ ...memberData, isAdminUser: false });
+              } else if (session.user.email === "admin@luchenfund.com") {
+                setUser({ email: session.user.email, role: "admin", isAdminUser: true });
+              }
             }
+          }) catch (error) {
+            console.error("Error checking session:", error);
           }
         };
         checkSession();
@@ -76,13 +89,13 @@
 
       // Load dữ liệu từ Supabase
       useEffect(() => {
-        if (!supabase || !user) return;
+        if (!user) return;
         const fetchData = async () => {
           try {
-            const { data: membersData } = await supabase.from("members").select("*");
-            const { data: inactiveMembersData } = await supabase.from("inactive_members").select("*");
+            const { data: membersData } = await supabase.from("members").select();
+            const { data: inactiveMembersData } = await supabase.from("inactive_members").select();
             const { data: eventsData } = await supabase.from("events").select();
-            const { data: contributionsData } = await supabase.from("contributions").select("*");
+            const { data: contributionsData } = await supabase.from("contributions").select();
             setMembers(membersData || []);
             setInactiveMembers(inactiveMembersData || []);
             setEvents(eventsData || []);
@@ -98,7 +111,6 @@
       }, [user]);
 
       const handleLogin = async () => {
-        if (!supabase) return;
         try {
           const { error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) throw error;
@@ -113,7 +125,7 @@
           } else if (session.user.email === "admin@luchenfund.com") {
             setUser({ email: session.user.email, role: "admin", isAdminUser: true });
           } else {
-            throw new Error("Tài khoản không hợp lệ");
+            throw new Error("Invalid account");
           }
           setEmail("");
           setPassword("");
@@ -125,7 +137,6 @@
       };
 
       const handleLogout = async () => {
-        if (!supabase) return;
         try {
           await supabase.auth.signOut();
           setUser(null);
@@ -141,12 +152,10 @@
       };
 
       const addMember = async () => {
-        if (!supabase || !newMemberName.trim() || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || !newMemberName.trim() || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const memberEmail = `${newMemberName.toLowerCase().replace(/\s+/g, "")}@luchenfund.com`;
         const memberPassword = newMemberRole === "admin" ? "bidv123456" : "123456";
         try {
-          // Lưu ý: Cần Cloud Function để tạo user trong auth.users
-          // Tạm thời giả định user được tạo thủ công trong Supabase Dashboard
           const { data: memberData } = await supabase
             .from("members")
             .insert([
@@ -156,7 +165,7 @@
                 transactions: [],
                 role: newMemberRole,
                 email: memberEmail,
-                auth_user_id: null, // Cập nhật sau khi tạo user
+                auth_user_id: null,
               },
             ])
             .select();
@@ -172,7 +181,7 @@
       };
 
       const updateMemberRole = async (memberId, newRole) => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         try {
           const { data } = await supabase
             .from("members")
@@ -189,7 +198,7 @@
       };
 
       const removeMember = async (index) => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const member = members[index];
         try {
           await supabase.from("inactive_members").insert([member]);
@@ -205,7 +214,7 @@
       };
 
       const deleteMember = async (memberId, memberRole) => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         if (!user.isAdminUser && memberRole === "admin") {
           alert("Bạn không có quyền xóa thành viên admin!");
           return;
@@ -214,7 +223,6 @@
         try {
           const member = members.find((m) => m.id === memberId);
           if (member.email) {
-            // Lưu ý: Cần Cloud Function để xóa user từ auth.users
             alert(`Vui lòng xóa user ${member.email} trong Supabase Dashboard.`);
           }
           await supabase.from("members").delete().eq("id", memberId);
@@ -228,7 +236,7 @@
       };
 
       const reactivateMember = async (index) => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const member = inactiveMembers[index];
         try {
           await supabase.from("members").insert([member]);
@@ -244,7 +252,7 @@
       };
 
       const addContribution = async (memberIndex) => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const rawAmount = contributionInputs[memberIndex] || "";
         const amount = Math.floor(parseInt(rawAmount.replace(/[^0-9]/g, ""), 10) || 0);
         if (amount <= 0 || isNaN(amount)) return;
@@ -273,7 +281,7 @@
       };
 
       const addEvent = async () => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser) || !newEvent.totalCost || newEvent.participants.length === 0) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser) || !newEvent.totalCost || newEvent.participants.length === 0) return;
         const rawCost = newEvent.totalCost.replace(/[^0-9]/g, "");
         const totalCost = Math.floor(parseInt(rawCost, 10) || 0);
         if (totalCost <= 0) return;
@@ -328,7 +336,7 @@
       };
 
       const clearData = async () => {
-        if (!supabase || (user?.role !== "admin" && !user?.isAdminUser)) return;
+        if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         if (window.confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu? Hành động này không thể hoàn tác.")) {
           try {
             await supabase.from("members").delete().gte("id", 0);
@@ -449,7 +457,7 @@
 
           {/* Tab Content */}
           {activeTab === "addMember" && (
-            <div className="mb-6 bg-white p-4 rounded-md shadow-lg">
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
               <div className="flex items-center space-x-2">
                 <input
@@ -482,24 +490,24 @@
           )}
 
           {activeTab === "contribute" && (
-            <div className="mb-6 bg-white p-4 rounded-md shadow-lg">
-              <h2 className="text-xl font-semibold mb-2">Nộp ngân quỹ</h2>
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-2">Nộp quỹ</h2>
               <div className="space-y-2">
                 {members.map((member, index) => (
                   <div key={member.id} className="flex items-center">
-                    <span className="w-20 text-right mr-2">{member.name}:</span>
+                    <span className="w-32 text-right mr-2">{member.name}:</span>
                     <input
                       type="text"
                       value={contributionInputs[index] || ""}
                       onChange={(e) => handleContributionInput(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, "addContribution", index)}
                       placeholder="Số tiền (VND)"
-                      className="border border-gray-300 p-2 rounded-md w-40 mr-2"
+                      className="border border-gray-300 p-2 rounded-lg w-40 mr-2"
                       disabled={user.role !== "admin" && !user.isAdminUser}
                     />
                     <button
                       onClick={() => addContribution(index)}
-                      className="bg-blue-500 text-white px-2 rounded-md hover:bg-blue-600"
+                      className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600"
                       disabled={user.role !== "admin" && !user.isAdminUser}
                     >
                       Nộp
@@ -511,43 +519,41 @@
           )}
 
           {activeTab === "addEvent" && (
-            <div className="mb-6 bg-white p-4 rounded-md">
-              <h2 className="text-xl font-semibold mb-2">Thêm sự kiện</h2>
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-2">Thêm sự kiện (bữa ăn)</h2>
               <input
                 type="text"
                 value={newEvent.totalCost}
                 onChange={(e) => setNewEvent({ ...newEvent, totalCost: formatInputVND(e.target.value) })}
                 onKeyDown={(e) => handleKeyDown(e, "addEvent")}
-                placeholder="Tổng chi phí (VNĐ)"
-                className="border border-gray-300 p-1 rounded-md w-full mb-2"
+                placeholder="Tổng chi phí (VND)"
+                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
                 disabled={user.role !== "admin" && !user.isAdminUser}
               />
               <input
                 type="date"
                 value={newEvent.date}
                 onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                className="border border-gray-300 p-1 rounded-md w-full mb-2"
+                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
                 disabled={user.role !== "admin" && !user.isAdminUser}
               />
               <h3 className="font-semibold mb-2">Chọn thành viên tham gia:</h3>
-              <div className="space-y-1">
-                {members.map((member, index) => (
-                  <div key={index} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={newEvent.participants.includes(index)}
-                      onChange={() => toggleParticipant(index)}
-                      className="mr-2"
-                      disabled={user.role !== "admin" && !user.isAdminUser}
-                    />
-                    <span>{member.name}</span>
-                  </div>
-                ))}
-              </div>
+              {members.map((member, index) => (
+                <div key={member.id} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={newEvent.participants.includes(index)}
+                    onChange={() => toggleParticipant(index)}
+                    className="mr-2"
+                    disabled={user.role !== "admin" && !user.isAdminUser}
+                  />
+                  <span>{member.name}</span>
+                </div>
+              ))}
               <button
                 onClick={addEvent}
-                className="bg-blue-500 text-white px-4 py-1 rounded-md mt-2 hover:bg-blue-600"
-                disabled={user.role === "admin" || user.isAdminUser}
+                className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 mt-2"
+                disabled={user.role !== "admin" && !user.isAdminUser}
               >
                 Thêm sự kiện
               </button>
@@ -555,7 +561,7 @@
           )}
 
           {activeTab === "manageMembers" && (user.role === "admin" || user.isAdminUser) && (
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-lg">
+            <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Quản lý thành viên</h2>
               <table className="w-full border-collapse">
                 <thead>
@@ -586,7 +592,8 @@
                           disabled={m.email === user.email || (!user.isAdminUser && m.role === "admin")}
                         >
                           Xóa
-                        </td>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -596,13 +603,13 @@
 
           {editMember && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="bg-white p-6 rounded-lg shadow-lg">
+              <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-semibold mb-4">Chỉnh sửa vai trò</h2>
                 <label className="block mb-2">Vai trò:</label>
                 <select
                   value={editMember.role}
                   onChange={(e) => setEditMember({ ...editMember, role: e.target.value })}
-                  className="border border-gray-300 p-2 rounded-lg w-full mb-1"
+                  className="border border-gray-300 p-2 rounded-lg w-full mb-4"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -616,7 +623,7 @@
                   </button>
                   <button
                     onClick={() => setEditMember(null)}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
                   >
                     Hủy
                   </button>
@@ -626,28 +633,28 @@
           )}
 
           {/* Danh sách thành viên */}
-          <div className="mb-6 bg-white p-4 rounded-md">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border-b p-2">Tên</th>
-                  <th className="border-b p-2">Số dư (VNĐ)</th>
-                  <th className="border-b p-2">Hành động</th>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {members.map((member, index) => (
                   <tr key={member.id}>
-                    <td className="border-b p-2">{member.name}</td>
-                    <td className="border-b p-2">{formatVND(member)}</td>
-                    <td className="border-b p-2">
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
+                    <td className="border p-2">
                       <button
-                        onClick={() => deleteMember(index)}
-                        className="bg-red-500 text-white px-2 rounded-md py-1 hover:bg-red-600"
+                        onClick={() => removeMember(index)}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
                         disabled={user.role !== "admin" && !user.isAdminUser}
                       >
-                        Delete
+                        Loại bỏ
                       </button>
                     </td>
                   </tr>
@@ -657,25 +664,25 @@
           </div>
 
           {/* Thành viên cũ */}
-          <div className="mb-6 bg-white p-4 rounded-md">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border-b p-2">Tên</th>
-                  <th className="border-b p-2">Số dư (VNĐ)</th>
-                  <th className="border-b p-2">Hành động</th>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Tên</th>
+                  <th className="border p-2">Số dư (VND)</th>
+                  <th className="border p-2">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {inactiveMembers.map((member, index) => (
-                  <tr key={index}>
-                    <td className="border-b p-2">{member.name}</td>
-                    <td className="border-b p-2">{formatVND(member.balance)}</td>
-                    <td className="border-b p-2">
+                  <tr key={member.id}>
+                    <td className="border p-2">{member.name}</td>
+                    <td className="border p-2">{formatVND(member.balance)}</td>
+                    <td className="border p-2">
                       <button
                         onClick={() => reactivateMember(index)}
-                        className="bg-green-500 text-white px-2 rounded-md py-1 hover:bg-green-600"
+                        className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
                         disabled={user.role !== "admin" && !user.isAdminUser}
                       >
                         Kích hoạt lại
@@ -688,15 +695,15 @@
           </div>
 
           {/* Lịch sử giao dịch */}
-          <div className="mb-6 bg-white p-4 rounded-md">
+          <div className="mb-6 bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
-            {members.map((member, index) => (
-              <div key={index} className="mb-4">
-                <h3 className="font-bold">{member.name}</h3>
-                <ul className="space-y-0">
+            {members.map((member) => (
+              <div key={member.id} className="mb-4">
+                <h3 className="font-semibold">{member.name}</h3>
+                <ul>
                   {(member.transactions || []).map((txn, i) => (
-                    <li key={i} className={txn.type === "contribution" ? "text-green-500" : "text-red-500"}>
-                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VNĐ
+                    <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
+                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
                     </li>
                   ))}
                 </ul>
@@ -705,12 +712,12 @@
           </div>
 
           {/* Lịch sử sự kiện nhóm */}
-          <div className="bg-white p-4 rounded-md">
+          <div className="bg-white p-4 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
-            <ul className="space-y-0">
-              {events.map((event, index) => (
-                <li key={index}>
-                  {event.date}: Tổng chi phí {formatVND(event.total_cost)} VNĐ, Nhóm: {event.participants.join(", ")}
+            <ul>
+              {events.map((event) => (
+                <li key={event.id}>
+                  {event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
                 </li>
               ))}
             </ul>
@@ -725,6 +732,12 @@
       console.log("ReactDOM.createRoot called successfully");
     } catch (error) {
       console.error("Error rendering React app:", error);
+      document.getElementById("root").innerHTML = `
+        <div style="text-align: center; color: red; padding: 20px;">
+          <h1>Lỗi render ứng dụng</h1>
+          <p>Vui lòng kiểm tra console (F12) để biết chi tiết.</p>
+        </div>
+      `;
     }
   </script>
 </body>
