@@ -4,15 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quản lý quỹ</title>
-  <script src="https://cdn.jsdelivr.com/npm/react@17.0.0/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.com/npm/react-dom@17.0.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.17.0/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@17.0.2/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@17.0.2/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div id="app"></div>
   <script type="text/babel">
+    // Kiểm tra xem React có được tải không
+    if (typeof React === 'undefined') {
+      console.error('React is not loaded. Check CDN URL or network connection.');
+      document.getElementById('app').innerHTML = `
+        <div className="text-center text-red-600 p-5">
+          <h1>Lỗi tải thư viện</h1>
+          <p>Không thể tải React. Vui lòng kiểm tra kết nối mạng hoặc console (F12).</p>
+        </div>
+      `;
+    }
+
     const { useState, useEffect } = React;
 
     const formatVND = (num) => Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
