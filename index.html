@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quản lý quỹ</title>
   <script src="https://cdn.jsdelivr.net/npm/react@17.0.2/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@17.0.2/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@17.0.0.2/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -17,17 +17,33 @@
     if (typeof React === 'undefined') {
       console.error('React is not loaded. Check CDN URL or network connection.');
       document.getElementById('app').innerHTML = `
-        <div className="text-center text-red-600 p-5">
+        <div class="text-center text-red-600 p-5">
           <h1>Lỗi tải thư viện</h1>
           <p>Không thể tải React. Vui lòng kiểm tra kết nối mạng hoặc console (F12).</p>
         </div>
       `;
     }
 
+    // Kiểm tra xem ReactDOM có được tải không
+    if (typeof ReactDOM === 'undefined') {
+      console.error('ReactDOM is not loaded. Check CDN URL or network connection.');
+      document.getElementById('app').innerHTML = `
+        <div class="text-center text-red-600 p-5">
+          <h1>Lỗi tải thư viện</h1>
+          <p>Không thể tải ReactDOM. Vui lòng kiểm tra kết nối mạng hoặc console (F12).</p>
+        </div>
+      `;
+    }
+
     const { useState, useEffect } = React;
 
-    const formatVND = (num) => Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    const formatInputVND = (val) => val.replace(/[^0-9]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const formatVND = (num) => {
+      return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    const formatInputVND = (val) => {
+      return val.replace(/[^0-9]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
 
     // Hàm chuẩn hóa username: loại bỏ dấu, khoảng trắng, ký tự đặc biệt
     const normalizeUsername = (name) => {
@@ -37,14 +53,14 @@
     };
 
     let supabase;
-    if (typeof window.supabase !== "undefined") {
+    if (typeof window.supabase !== 'undefined') {
       supabase = window.supabase.createClient(
         "https://xlshingqqouzqbljysmi.supabase.co",
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsc2hpbmdxcW91enFibGp5c21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzQxODYsImV4cCI6MjA2NDYxMDE4Nn0.v9YlKzHEA4a5Ib1LP7Bd_1m1zHFBw_2CjgCBDXmwixQ"
       );
       console.log('Supabase client:', supabase);
     } else {
-      console.error("Supabase not loaded.");
+      console.error('Supabase not loaded.');
     }
 
     const App = () => {
@@ -750,9 +766,8 @@
     };
 
     try {
-      const root = ReactDOM.createRoot(document.getElementById("app"));
-      root.render(<App />);
-      console.log("ReactDOM.createRoot called");
+      ReactDOM.render(<App />, document.getElementById("app"));
+      console.log("ReactDOM.render called");
     } catch (error) {
       console.error("Render error:", error);
       document.getElementById("app").innerHTML = `
