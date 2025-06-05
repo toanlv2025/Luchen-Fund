@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quản lý quỹ</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.com/npm/react@17.0.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.com/npm/react-dom@17.0.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.17.0/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
@@ -61,36 +61,47 @@
         );
       }
 
-      useEffect(() => {
-        const checkSession = async () => {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              if (session.user.email === "admin@luchenfund.com") {
-                setUser({ username: "admin", email: session.user.email, role: "admin", isAdminUser: true });
-              } else {
-                const { data: memberData } = await supabase
-                  .from("members")
-                  .select("id, name, role, email, username")
-                  .eq("email", session.user.email)
-                  .single();
-                if (memberData) {
-                  setUser({ ...memberData, isAdminUser: false });
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Session error:", error);
+      const handleLogin = async () => {
+        try {
+          console.log('Attempting login with:', { username, password });
+          const { data: memberData, error } = await supabase
+            .from("members")
+            .select("id, name, role, email, username")
+            .eq("username", username)
+            .eq("password", password)
+            .single();
+          if (error || !memberData) {
+            console.error('Login error:', error?.message || 'Invalid credentials');
+            throw new Error("Tên đăng nhập hoặc mật khẩu không đúng");
           }
-        };
-        checkSession();
-      }, []);
+          console.log('Logged in user:', memberData);
+          setUser({ ...memberData, isAdminUser: memberData.username === 'ToanLV' });
+          setUsername("");
+          setPassword("");
+        } catch (error) {
+          console.error("Login error details:", error.message);
+          alert("Đăng nhập thất bại: " + error.message);
+        }
+      };
+
+      const handleLogout = () => {
+        setUser(null);
+        setMembers([]);
+        setInactiveMembers([]);
+        setEvents([]);
+        setContributions([]);
+        setTotalBalance(0);
+        console.log("Logged out");
+      };
 
       useEffect(() => {
         if (!user || user.isAdminUser) return;
         const fetchData = async () => {
           try {
-            const { data: membersData } = await supabase.from("members").select("*");
+            const { data: membersData } = await supabase
+              .from("members")
+              .select("*")
+              .neq("username", "ToanLV"); // Loại admin khỏi danh sách
             const { data: inactiveMembersData } = await supabase.from("inactive_members").select("*");
             const { data: eventsData } = await supabase.from("events").select("*");
             const { data: contributionsData } = await supabase.from("contributions").select("*");
@@ -108,77 +119,21 @@
         fetchData();
       }, [user]);
 
-      const handleLogin = async () => {
-        try {
-          console.log('Attempting login with:', { username, password });
-          let email;
-          if (username === "admin") {
-            email = "admin@luchenfund.com";
-          } else {
-            const { data: memberData } = await supabase
-              .from("members")
-              .select("email")
-              .eq("username", username)
-              .single();
-            if (!memberData) {
-              throw new Error("Tên đăng nhập không tồn tại");
-            }
-            email = memberData.email;
-          }
-          console.log('Mapped username to email:', email);
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) {
-            console.error('Supabase auth error:', error.message, error.code, error.status);
-            throw error;
-          }
-          console.log('Auth data:', data);
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('Session:', session);
-          if (session.user.email === "admin@luchenfund.com") {
-            setUser({ username, email: session.user.email, role: "admin", isAdminUser: true });
-          } else {
-            const { data: memberData } = await supabase
-              .from("members")
-              .select("id, name, role, email, username")
-              .eq("email", session.user.email)
-              .single();
-            if (memberData) {
-              setUser({ ...memberData, isAdminUser: false });
-            } else {
-              throw new Error("Tài khoản không hợp lệ");
-            }
-          }
-          setUsername("");
-          setPassword("");
-          console.log("Logged in:", session.user.email);
-        } catch (error) {
-          console.error("Login error details:", error.message, error);
-          alert("Đăng nhập thất bại: " + error.message);
-        }
-      };
-
-      const handleLogout = async () => {
-        try {
-          await supabase.auth.signOut();
-          setUser(null);
-          setMembers([]);
-          setInactiveMembers([]);
-          setEvents([]);
-          setContributions([]);
-          setTotalBalance(0);
-          console.log("Logged out");
-        } catch (error) {
-          console.error("Logout error:", error);
-        }
-      };
-
       const addMember = async () => {
         if (!newMemberName.trim() || !user?.isAdminUser) return;
         const memberUsername = normalizeUsername(newMemberName);
         const memberEmail = `${memberUsername}@luchenfund.com`;
         const memberPassword = newMemberRole === "admin" ? "bidv123456" : "123456";
         try {
-          const { data: memberData } = await supabase
+          const { data: existingMember } = await supabase
+            .from("members")
+            .select("id")
+            .eq("username", memberUsername)
+            .single();
+          if (existingMember) {
+            throw new Error("Tên đăng nhập đã tồn tại");
+          }
+          const { data: memberData, error } = await supabase
             .from("members")
             .insert([
               {
@@ -188,16 +143,18 @@
                 transactions: [],
                 role: newMemberRole,
                 email: memberEmail,
+                password: memberPassword,
               },
             ])
             .select();
-          setMembers([...members, memberData[0]]);
+          if (error) throw error;
+          setMembers([...members, ...(memberUsername !== 'ToanLV' ? [memberData[0]] : [])]);
           setNewMemberName("");
           setNewMemberRole("member");
           console.log("Added member:", newMemberName, "username:", memberUsername, "email:", memberEmail);
-          alert(`Thành viên đã thêm. Tên đăng nhập: ${memberUsername}, Email: ${memberEmail}, Mật khẩu: ${memberPassword}. Vui lòng tạo user trong Supabase Dashboard.`);
+          alert(`Thành viên đã thêm. Tên đăng nhập: ${memberUsername}, Email: ${memberEmail}, Mật khẩu: ${memberPassword}.`);
         } catch (error) {
-          console.error("Add member error:", error);
+          console.error("Add member error:", error.message);
           alert("Thêm thành viên thất bại: " + error.message);
         }
       };
@@ -205,16 +162,17 @@
       const updateMemberRole = async (memberId, newRole) => {
         if (!user?.isAdminUser) return;
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from("members")
             .update({ role: newRole })
             .eq("id", memberId)
             .select();
+          if (error) throw error;
           setMembers(members.map((m) => (m.id === memberId ? data[0] : m)));
           setEditMember(null);
           console.log("Role updated for member:", memberId, "to:", newRole);
         } catch (error) {
-          console.error("Role update error:", error);
+          console.error("Role update error:", error.message);
           alert("Cập nhật vai trò thất bại: " + error.message);
         }
       };
@@ -223,32 +181,31 @@
         if (!user || user.role !== "admin") return;
         const member = members[index];
         try {
-          await supabase.from("inactive_members").insert([member]);
-          await supabase.from("members").delete().eq("id", member.id);
+          const { error: insertError } = await supabase.from("inactive_members").insert([member]);
+          if (insertError) throw insertError;
+          const { error: deleteError } = await supabase.from("members").delete().eq("id", member.id);
+          if (deleteError) throw deleteError;
           setInactiveMembers([...inactiveMembers, member]);
           setMembers(members.filter((_, i) => i !== index));
           const total = members.filter((_, i) => i !== index).reduce((sum, m) => sum + m.balance, 0);
           setTotalBalance(total);
           console.log("Removed member:", member.name);
         } catch (error) {
-          console.error("Remove member error:", error);
+          console.error("Remove member error:", error.message);
         }
       };
 
-      const deleteMember = async (memberId, memberRole) => {
+      const deleteMember = async (memberId) => {
         if (!user?.isAdminUser) return;
         if (!window.confirm("Xác nhận xóa thành viên?")) return;
         try {
-          const member = members.find((m) => m.id === memberId);
-          if (member.email) {
-            alert(`Xóa user ${member.email} trong Supabase Dashboard.`);
-          }
-          await supabase.from("members").delete().eq("id", memberId);
+          const { error } = await supabase.from("members").delete().eq("id", memberId);
+          if (error) throw error;
           setMembers(members.filter((m) => m.id !== memberId));
           setTotalBalance(members.filter((m) => m.id !== memberId).reduce((sum, m) => sum + m.balance, 0));
           console.log("Deleted member:", memberId);
         } catch (error) {
-          console.error("Delete member error:", error);
+          console.error("Delete member error:", error.message);
           alert("Xóa thành viên thất bại: " + error.message);
         }
       };
@@ -257,15 +214,17 @@
         if (!user || user.role !== "admin") return;
         const member = inactiveMembers[index];
         try {
-          await supabase.from("members").insert([member]);
-          await supabase.from("inactive_members").delete().eq("id", member.id);
+          const { error: insertError } = await supabase.from("members").insert([member]);
+          if (insertError) throw insertError;
+          const { error: deleteError } = await supabase.from("inactive_members").delete().eq("id", member.id);
+          if (deleteError) throw deleteError;
           setMembers([...members, member]);
           setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
           const total = [...members, member].reduce((sum, m) => sum + m.balance, 0);
           setTotalBalance(total);
           console.log("Reactivated member:", member.name);
         } catch (error) {
-          console.error("Reactivate error:", error);
+          console.error("Reactivate error:", error.message);
         }
       };
 
@@ -280,21 +239,23 @@
             ...(member.transactions || []),
             { type: "contribution", amount, date: new Date().toLocaleDateString() },
           ];
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from("members")
             .update({ balance: member.balance + amount, transactions: updatedTransactions })
             .eq("id", member.id)
             .select();
-          await supabase
+          if (error) throw error;
+          const { error: contribError } = await supabase
             .from("contributions")
             .insert([{ member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
+          if (contribError) throw contribError;
           setMembers(members.map((m, i) => (i === memberIndex ? data[0] : m)));
           setContributions([...contributions, { member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
           setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
           setTotalBalance(totalBalance + amount);
           console.log("Added contribution for", member.name, ":", amount);
         } catch (error) {
-          console.error("Contribution error:", error);
+          console.error("Contribution error:", error.message);
         }
       };
 
@@ -313,14 +274,15 @@
               ...(member.transactions || []),
               { type: "meal", amount: costPerPerson, date: eventDate },
             ];
-            const { data } = await supabase
+            const { data, error } = await supabase
               .from("members")
               .update({ balance: member.balance - costPerPerson, transactions: updatedTransactions })
               .eq("id", member.id)
               .select();
+            if (error) throw error;
             updatedMembers[memberIndex] = data[0];
           }
-          const { data: eventData } = await supabase
+          const { data: eventData, error } = await supabase
             .from("events")
             .insert([
               {
@@ -330,13 +292,14 @@
               },
             ])
             .select();
+          if (error) throw error;
           setMembers(updatedMembers);
           setEvents([...events, eventData[0]]);
           setNewEvent({ totalCost: "", participants: [], date: "" });
           setTotalBalance(totalBalance - totalCost);
           console.log("Added event, cost:", totalCost);
         } catch (error) {
-          console.error("Event error:", error);
+          console.error("Event error:", error.message);
         }
       };
 
@@ -357,10 +320,14 @@
         if (!user?.isAdminUser) return;
         if (window.confirm("Xác nhận xóa toàn bộ dữ liệu?")) {
           try {
-            await supabase.from("members").delete().gte("id", 0);
-            await supabase.from("inactive_members").delete().gte("id", 0);
-            await supabase.from("events").delete().gte("id", 0);
-            await supabase.from("contributions").delete().gte("id", 0);
+            const { error: membersError } = await supabase.from("members").delete().neq("username", "ToanLV");
+            if (membersError) throw membersError;
+            const { error: inactiveError } = await supabase.from("inactive_members").delete().gte("id", 0);
+            if (inactiveError) throw inactiveError;
+            const { error: eventsError } = await supabase.from("events").delete().gte("id", 0);
+            if (eventsError) throw eventsError;
+            const { error: contribsError } = await supabase.from("contributions").delete().gte("id", 0);
+            if (contribsError) throw contribsError;
             setMembers([]);
             setInactiveMembers([]);
             setEvents([]);
@@ -369,7 +336,7 @@
             console.log("Data cleared");
             window.location.reload();
           } catch (error) {
-            console.error("Clear data error:", error);
+            console.error("Clear data error:", error.message);
           }
         }
       };
@@ -632,7 +599,7 @@
                           Sửa
                         </button>
                         <button
-                          onClick={() => deleteMember(m.id, m.role)}
+                          onClick={() => deleteMember(m.id)}
                           className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
                           disabled={m.username === user.username}
                         >
