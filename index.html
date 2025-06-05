@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quản lý quỹ cơm</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý quỹ</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.5/babel.min.js"></script>
@@ -11,30 +11,21 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="app"></div>
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // Hàm định dạng tiền tệ VND
-    const formatVND = (number) => {
-      return Math.floor(number).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    };
+    const formatVND = (num) => Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const formatInputVND = (val) => val.replace(/[^0-9]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-    // Hàm định dạng input VND
-    const formatInputVND = (value) => {
-      const digits = value.replace(/[^0-9]/g, "");
-      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    };
-
-    // Khởi tạo Supabase client
     let supabase;
     if (typeof window.supabase !== "undefined") {
       supabase = window.supabase.createClient(
-        "https://xlshingqqouzqbljysmi.supabase.co", // Thay bằng SUPABASE_URL
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsc2hpbmdxcW91enFibGp5c21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzQxODYsImV4cCI6MjA2NDYxMDE4Nn0.v9YlKzHEA4a5Ib1LP7Bd_1m1zHFBw_2CjgCBDXmwixQ" // Thay bằng SUPABASE_ANON_KEY
+        "https://xlshingqqouzqbljysmi.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsc2hpbmdxcW91enFibGp5c21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzQxODYsImV4cCI6MjA2NDYxMDE4Nn0.v9YlKzHEA4a5Ib1LP7Bd_1m1zHFBw_2CjgCBDXmwixQ"
       );
     } else {
-      console.error("Supabase library not loaded. Please check the CDN.");
+      console.error("Supabase not loaded.");
     }
 
     const App = () => {
@@ -53,17 +44,15 @@
       const [totalBalance, setTotalBalance] = useState(0);
       const [editMember, setEditMember] = useState(null);
 
-      // Fallback UI nếu Supabase không tải
       if (!supabase) {
         return (
           <div className="p-6 max-w-md mx-auto text-center">
             <h1 className="text-2xl font-bold text-red-600">Lỗi khởi tạo</h1>
-            <p>Vui lòng kiểm tra kết nối mạng hoặc cấu hình Supabase.</p>
+            <p>Vui lòng kiểm tra kết nối hoặc Supabase.</p>
           </div>
         );
       }
 
-      // Kiểm tra trạng thái đăng nhập
       useEffect(() => {
         const checkSession = async () => {
           try {
@@ -81,13 +70,12 @@
               }
             }
           } catch (error) {
-            console.error("Error checking session:", error);
+            console.error("Session error:", error);
           }
         };
         checkSession();
       }, []);
 
-      // Load dữ liệu từ Supabase
       useEffect(() => {
         if (!user) return;
         const fetchData = async () => {
@@ -102,9 +90,9 @@
             setContributions(contributionsData || []);
             const total = (membersData || []).reduce((sum, m) => sum + m.balance, 0);
             setTotalBalance(total);
-            console.log("Data loaded from Supabase:", { membersData, inactiveMembersData, eventsData, contributionsData });
+            console.log("Data loaded:", { membersData, inactiveMembersData, eventsData, contributionsData });
           } catch (error) {
-            console.error("Error loading data from Supabase:", error);
+            console.error("Data load error:", error);
           }
         };
         fetchData();
@@ -172,10 +160,10 @@
           setMembers([...members, memberData[0]]);
           setNewMemberName("");
           setNewMemberRole("member");
-          console.log("Added member:", newMemberName, "with email:", memberEmail);
-          alert(`Thành viên đã được thêm. Email: ${memberEmail}, Mật khẩu: ${memberPassword}. Vui lòng tạo user trong Supabase Dashboard.`);
+          console.log("Added member:", newMemberName, "email:", memberEmail);
+          alert(`Thành viên đã thêm. Email: ${memberEmail}, Mật khẩu: ${memberPassword}. Tạo user trong Supabase Dashboard.`);
         } catch (error) {
-          console.error("Error adding member:", error);
+          console.error("Add member error:", error);
           alert("Thêm thành viên thất bại: " + error.message);
         }
       };
@@ -190,9 +178,9 @@
             .select();
           setMembers(members.map((m) => (m.id === memberId ? data[0] : m)));
           setEditMember(null);
-          console.log("Updated role for member:", memberId, "to:", newRole);
+          console.log("Role updated for member:", memberId, "to:", newRole);
         } catch (error) {
-          console.error("Error updating member role:", error);
+          console.error("Role update error:", error);
           alert("Cập nhật vai trò thất bại: " + error.message);
         }
       };
@@ -209,28 +197,28 @@
           setTotalBalance(total);
           console.log("Removed member:", member.name);
         } catch (error) {
-          console.error("Error removing member:", error);
+          console.error("Remove member error:", error);
         }
       };
 
       const deleteMember = async (memberId, memberRole) => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         if (!user.isAdminUser && memberRole === "admin") {
-          alert("Bạn không có quyền xóa thành viên admin!");
+          alert("Không có quyền xóa admin!");
           return;
         }
-        if (!window.confirm("Bạn có chắc muốn xóa thành viên này?")) return;
+        if (!window.confirm("Xác nhận xóa thành viên?")) return;
         try {
           const member = members.find((m) => m.id === memberId);
           if (member.email) {
-            alert(`Vui lòng xóa user ${member.email} trong Supabase Dashboard.`);
+            alert(`Xóa user ${member.email} trong Supabase Dashboard.`);
           }
           await supabase.from("members").delete().eq("id", memberId);
           setMembers(members.filter((m) => m.id !== memberId));
           setTotalBalance(members.filter((m) => m.id !== memberId).reduce((sum, m) => sum + m.balance, 0));
           console.log("Deleted member:", memberId);
         } catch (error) {
-          console.error("Error deleting member:", error);
+          console.error("Delete member error:", error);
           alert("Xóa thành viên thất bại: " + error.message);
         }
       };
@@ -242,91 +230,93 @@
           await supabase.from("members").insert([member]);
           await supabase.from("inactive_members").delete().eq("id", member.id);
           setMembers([...members, member]);
-          setInactiveMembers(inactiveMembers.filter((m, i) => i !== index));
-          const total = [...members, member].reduce((sum, m) => sum + m.balance, totalBalance);
+          setInactiveMembers(inactiveMembers.filter((_, i) => i !== index));
+          const total = [...members, member].reduce((sum, m) => sum + m.balance, 0);
           setTotalBalance(total);
-          console.log("Member reactivated:", member.name);
+          console.log("Reactivated member:", member.name);
         } catch (error) {
-          console.error("Error reactivating member:", error);
+          console.error("Reactivate error:", error);
         }
       };
 
       const addContribution = async (memberIndex) => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
         const rawAmount = contributionInputs[memberIndex] || "";
-        const amount = Math.floor(parseInt(rawAmount.replace(/[^0-9]/g, "")) || 0);
+        const amount = Math.floor(parseInt(rawAmount.replace(/[^0-9]/g, ""), 10) || 0);
         if (amount <= 0 || isNaN(amount)) return;
-        const memberData = members[memberIndex];
+        const member = members[memberIndex];
         try {
           const updatedTransactions = [
-            ...(memberData.transactions || []),
+            ...(member.transactions || []),
             { type: "contribution", amount, date: new Date().toLocaleDateString() },
           ];
           const { data } = await supabase
             .from("members")
-            .update({ balance: memberData.balance + amount, transactions: updatedTransactions] })
-            .eq("id", memberData.id)
+            .update({ balance: member.balance + amount, transactions: updatedTransactions })
+            .eq("id", member.id)
             .select();
           await supabase
             .from("contributions")
-            .insert([{ member_name: memberData.name, amount, date: new Date().toLocaleDateString() }]);
-          setMembers(members.map((m, i) => i === memberIndex ? data[0] : m));
-          setContributions([...contributions, { member_name: memberData.name, amount, date: new Date().toLocaleDateString() }]);
+            .insert([{ member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
+          setMembers(members.map((m, i) => (i === memberIndex ? data[0] : m)));
+          setContributions([...contributions, { member_name: member.name, amount, date: new Date().toLocaleDateString() }]);
           setContributionInputs({ ...contributionInputs, [memberIndex]: "" });
           setTotalBalance(totalBalance + amount);
-          console.log("Contribution added for", memberData.name, ":", amount);
+          console.log("Added contribution for", member.name, ":", amount);
         } catch (error) {
-          console.error("Error adding contribution:", error);
+          console.error("Contribution error:", error);
         }
       };
 
       const addEvent = async () => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser) || !newEvent.totalCost || newEvent.participants.length === 0) return;
         const rawCost = newEvent.totalCost.replace(/[^0-9]/g, "");
-        const totalCost = Math.floor(parseInt(rawCost) || 0);
+        const totalCost = Math.floor(parseInt(rawCost, 10) || 0);
         if (totalCost <= 0) return;
-        const costPerParticipant = Math.floor(totalCost / newEvent.participants.length);
-        const eventDate = newEvent.date || new Date().toDateString();
+        const costPerPerson = Math.floor(totalCost / newEvent.participants.length);
+        const eventDate = newEvent.date || new Date().toLocaleDateString();
         try {
-          const updatedMembers = [...membersData];
+          const updatedMembers = [...members];
           for (const memberIndex of newEvent.participants) {
-            const memberData = updatedMembers[memberIndex];
+            const member = updatedMembers[memberIndex];
             const updatedTransactions = [
-              ...(memberData.transactions || []),
-              { type: "meal", amount: costPerParticipant, date: eventDate },
+              ...(member.transactions || []),
+              { type: "meal", amount: costPerPerson, date: eventDate },
             ];
             const { data } = await supabase
               .from("members")
-              .update({ balance: memberData.balance - costPerParticipant, transactions: updatedTransactions })
-              .eq("id", memberData.id)
+              .update({ balance: member.balance - costPerPerson, transactions: updatedTransactions })
+              .eq("id", member.id)
               .select();
             updatedMembers[memberIndex] = data[0];
           }
           const { data: eventData } = await supabase
             .from("events")
-            .insert([{
-              total_cost: totalCost,
-              participants: newEvent.participants.map((i) => membersData[i].name),
-              date: eventDate,
-            }])
+            .insert([
+              {
+                total_cost: totalCost,
+                participants: newEvent.participants.map((i) => members[i].name),
+                date: eventDate,
+              },
+            ])
             .select();
-          setMembers(updatedEvents);
+          setMembers(updatedMembers);
           setEvents([...events, eventData[0]]);
           setNewEvent({ totalCost: "", participants: [], date: "" });
           setTotalBalance(totalBalance - totalCost);
-          console.log("Event added with total cost:", totalCost);
+          console.log("Added event, cost:", totalCost);
         } catch (error) {
-          console.error("Error adding event:", error);
+          console.error("Event error:", error);
         }
       };
 
       const toggleParticipant = (index) => {
         if (user?.role !== "admin" && !user?.isAdminUser) return;
-        const newParticipants = newEvent.participants.includes(index)
+        const participants = newEvent.participants.includes(index)
           ? newEvent.participants.filter((i) => i !== index)
           : [...newEvent.participants, index];
-        setNewEvent({ ...newEvent, participants: newParticipants });
-        console.log("Participant toggled:", members[index]?.name || "Unknown");
+        setNewEvent({ ...newEvent, participants });
+        console.log("Toggled participant:", members[index]?.name || "Unknown");
       };
 
       const handleContributionInput = (index, value) => {
@@ -335,7 +325,7 @@
 
       const clearData = async () => {
         if (!user || (user?.role !== "admin" && !user?.isAdminUser)) return;
-        if (window.confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu? Hành động này không thể hoàn tác.")) {
+        if (window.confirm("Xác nhận xóa toàn bộ dữ liệu?")) {
           try {
             await supabase.from("members").delete().gte("id", 0);
             await supabase.from("inactive_members").delete().gte("id", 0);
@@ -346,10 +336,10 @@
             setEvents([]);
             setContributions([]);
             setTotalBalance(0);
-            console.log("All data cleared from Supabase");
+            console.log("Data cleared");
             window.location.reload();
           } catch (error) {
-            console.error("Error clearing data:", error);
+            console.error("Clear data error:", error);
           }
         }
       };
@@ -397,13 +387,12 @@
 
       return (
         <div className="p-6 max-w-4xl mx-auto bg-gray-100 min-h-screen relative">
-          {/* Total Balance */}
           <div className={`fixed top-4 right-4 text-lg font-bold ${totalBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
             Quỹ: {formatVND(totalBalance)} VND
           </div>
 
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-center">Quản lý quỹ cơm</h1>
+            <h1 className="text-3xl font-bold text-center">Quản lý quỹ</h1>
             <div className="flex items-center space-x-2">
               <span className="text-gray-600">{user.email} ({user.isAdminUser ? "Admin (Khởi tạo)" : user.role})</span>
               <button
@@ -423,7 +412,6 @@
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex mb-6 border-b border-gray-200">
             <button
               className={`px-4 py-2 font-semibold ${activeTab === "addMember" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-600"}`}
@@ -453,7 +441,6 @@
             )}
           </div>
 
-          {/* Tab Content */}
           {activeTab === "addMember" && (
             <div className="mb-6 bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">Thêm thành viên</h2>
@@ -501,12 +488,12 @@
                       onKeyDown={(e) => handleKeyDown(e, "addContribution", index)}
                       placeholder="Số tiền (VND)"
                       className="border border-gray-300 p-2 rounded-lg w-40 mr-2"
-                      disabled={user.role !== "admin" && !user.isAdminUser}
+                      disabled={false}
                     />
                     <button
                       onClick={() => addContribution(index)}
                       className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600"
-                      disabled={user.role !== "admin" && !user.isAdminUser}
+                      disabled={false}
                     >
                       Nộp
                     </button>
@@ -525,17 +512,17 @@
                 onChange={(e) => setNewEvent({ ...newEvent, totalCost: formatInputVND(e.target.value) })}
                 onKeyDown={(e) => handleKeyDown(e, "addEvent")}
                 placeholder="Tổng chi phí (VND)"
-                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
-                disabled={user.role !== "admin" && !user.isAdminUser}
+                className="border border-gray-300 p-2 mb-2 rounded-lg w-full"
+                disabled={false}
               />
               <input
                 type="date"
                 value={newEvent.date}
                 onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                className="border border-gray-300 p-2 mb-2 w-full rounded-lg"
-                disabled={user.role !== "admin" && !user.isAdminUser}
+                className="border border-gray-300 p-2 mb-2 rounded-lg w-full"
+                disabled={false}
               />
-              <h3 className="font-semibold mb-2">Chọn thành viên tham gia:</h3>
+              <h3 className="font-semibold mb-2">Chọn tham gia:</h3>
               {members.map((member, index) => (
                 <div key={member.id} className="flex items-center mb-2">
                   <input
@@ -543,7 +530,7 @@
                     checked={newEvent.participants.includes(index)}
                     onChange={() => toggleParticipant(index)}
                     className="mr-2"
-                    disabled={user.role !== "admin" && !user.isAdminUser}
+                    disabled={false}
                   />
                   <span>{member.name}</span>
                 </div>
@@ -551,7 +538,7 @@
               <button
                 onClick={addEvent}
                 className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 mt-2"
-                disabled={user.role !== "admin" && !user.isAdminUser}
+                disabled={false}
               >
                 Thêm sự kiện
               </button>
@@ -582,7 +569,7 @@
                           className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 mr-2"
                           disabled={m.email === user.email}
                         >
-                          Chỉnh sửa
+                          Sửa
                         </button>
                         <button
                           onClick={() => deleteMember(m.id, m.role)}
@@ -595,148 +582,144 @@
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
-          )}
+ </table>
+</div>
+)}
 
-          {editMember && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-semibold mb-4">Chỉnh sửa vai trò</h2>
-                <label className="block mb-2">Vai trò:</label>
-                <select
-                  value={editMember.role}
-                  onChange={(e) => setEditMember({ ...editMember, role: e.target.value })}
-                  className="border border-gray-300 p-2 rounded-lg w-full mb-4"
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => updateMemberRole(editMember.id, editMember.role)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                  >
-                    Lưu
-                  </button>
-                  <button
-                    onClick={() => setEditMember(null)}
-                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+{editMember && (
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+<div className="bg-white p-6 rounded-lg shadow">
+<h2 className="text-xl font-semibold mb-4">Sửa vai trò</h2>
+<label className="block mb-2">Vai trò:</label>
+<select
+value={editMember.role}
+onChange={(e) => setEditMember({ ...editMember, role: e.target.value })}
+className="border border-gray-300 p-2 rounded-lg w-full mb-4"
+>
+<option value="member">Thành viên</option>
+<option value="admin">Quản trị</option>
+</select>
+<div className="flex justify-end space-x-2">
+<button
+onClick={() => updateMemberRole(editMember.id, editMember.role)}
+className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+>
+Lưu
+</button>
+<button
+onClick={() => setEditMember(null)}
+className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+>
+Hủy
+</button>
+</div>
+</div>
+</div>
+)}
 
-          {/* Danh sách thành viên */}
-          <div className="mb-6 bg-white p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Tên</th>
-                  <th className="border p-2">Số dư (VND)</th>
-                  <th className="border p-2">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((member, index) => (
-                  <tr key={member.id}>
-                    <td className="border p-2">{member.name}</td>
-                    <td className="border p-2">{formatVND(member.balance)}</td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => removeMember(index)}
-                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                        disabled={user.role !== "admin" && !user.isAdminUser}
-                      >
-                        Loại bỏ
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+<div className="mb-6 bg-white p-4 rounded-lg shadow">
+<h2 className="text-xl font-semibold mb-2">Danh sách thành viên</h2>
+<table className="w-full border-collapse">
+<thead>
+<tr className="bg-gray-200">
+<th className="border p-2">Tên</th>
+<th className="border p-2">Số dư (VND)</td>
+<th className="border p-2">Hành động</th>
+</tr>
+</thead>
+<tbody>
+{members.map((member, index) => (
+<tr key={member.id}>
+<td className="border p-2">{member.name}</td>
+<td className="border p-2">{formatVND(member.balance)}</td>
+<td className="border p-2">
+<button
+onClick={() => removeMember(index)}
+className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+disabled={user.role !== "admin" && !user.isAdminUser}
+>
+Loại bỏ
+</button>
+</td>
+</tr>
+))}
+</tbody>
+</table>
+</div>
 
-          {/* Thành viên cũ */}
-          <div className="mb-6 bg-white p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Tên</th>
-                  <th className="border p-2">Số dư (VND)</th>
-                  <th className="border p-2">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inactiveMembers.map((member, index) => (
-                  <tr key={member.id}>
-                    <td className="border p-2">{member.name}</td>
-                    <td className="border p-2">{formatVND(member.balance)}</td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => reactivateMember(index)}
-                        className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
-                        disabled={user.role !== "admin" && !user.isAdminUser}
-                      >
-                        Kích hoạt lại
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+<div className="mb-6 bg-white p-4 rounded-lg shadow">
+<h2 className="text-xl font-semibold mb-2">Thành viên cũ</h2>
+<table className="w-full border-collapse">
+<thead>
+<tr className="bg-gray-200">
+<th className="border p-2">Tên</th>
+<th className="border p-2">Số dư (VND)</th>
+<th className="border p-2">Hành động</th>
+</tr>
+</thead>
+<tbody>
+{inactiveMembers.map((member, index) => (
+<tr key={member.id}>
+<td className="border p-2">{member.name}</td>
+<td className="border p-2">{formatVND(member.balance)}</td>
+<td className="border p-2">
+<button
+onClick={() => reactivateMember(index)}
+className="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
+disabled={user.role !== "admin" && !user.isAdminUser}
+>
+Kích hoạt lại
+</button>
+</td>
+</tr>
+))}
+</tbody>
+</table>
+</div>
 
-          {/* Lịch sử giao dịch */}
-          <div className="mb-6 bg-white p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
-            {members.map((member) => (
-              <div key={member.id} className="mb-4">
-                <h3 className="font-semibold">{member.name}</h3>
-                <ul>
-                  {(member.transactions || []).map((txn, i) => (
-                    <li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}>
-                      {txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+<div className="mb-6 bg-white p-4 rounded-lg shadow">
+<h2 className="text-xl font-semibold mb-2">Lịch sử giao dịch</h2>
+{members.map((member) => (
+<div key={member.id} className="mb-4">
+<h3 className="font-semibold">{member.name}</h3>
+<ul>
+{(member.transactions || []).map((txn, i) => (
+<li key={i} className={txn.type === "contribution" ? "text-green-600" : "text-red-600"}}>
+{txn.date}: {txn.type === "contribution" ? "+" : "-"} {formatVND(txn.amount)} VND
+</li>
+))}
+</ul>
+</div>
+))}
+</div>
 
-          {/* Lịch sử sự kiện nhóm */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện nhóm</h2>
-            <ul>
-              {events.map((event) => (
-                <li key={event.id}>
-                  {event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      );
-    };
+<div className="bg-white p-4 rounded-lg shadow">
+<h2 className="text-xl font-semibold mb-2">Lịch sử sự kiện</h2>
+<ul>
+{events.map((event) => (
+<li key={event.id}>
+{event.date}: Tổng chi phí {formatVND(event.total_cost)} VND, Thành viên: {event.participants.join(", ")}
+</li>
+))}
+</ul>
+</div>
+</div>
+);
+};
 
-    try {
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
-      console.log("ReactDOM.createRoot called successfully");
-    } catch (error) {
-      console.error("Error rendering React app:", error);
-      document.getElementById("root").innerHTML = `
-        <div style="text-align: center; color: red; padding: 20px;">
-          <h1>Lỗi render ứng dụng</h1>
-          <p>Vui lòng kiểm tra console (F12) để biết chi tiết.</p>
-        </div>
-      `;
-    }
-  </script>
+try {
+const root = ReactDOM.createRoot(document.getElementById("app"));
+root.render(<App />);
+console.log("ReactDOM.createRoot called");
+} catch (error) {
+console.error("Render error:", error);
+document.getElementById("app").innerHTML = `
+<div className="text-center text-red-600 p-5">
+<h1>Lỗi render</h1>
+<p>Kiểm tra console (F12).</p>
+</div>
+`;
+}
+</script>
 </body>
 </html>
